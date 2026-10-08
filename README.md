@@ -17,12 +17,10 @@ Hedgehogs prepares Matplotlib figures and presents tables, progress and status m
 
 ## Installation
 
-Requires **Python 3.10+**. Install from a source checkout:
+Requires **Python 3.10+**.
 
 ```bash
-git clone https://github.com/PentagonToy/Hedgehogs.git
-cd Hedgehogs
-python -m pip install -e .
+pip install hedgehogs
 ```
 
 ## Usage Example
