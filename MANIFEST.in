@@ -1,0 +1,6 @@
+include CHANGELOG.md
+recursive-include docs *.md *.svg
+recursive-include others *.svg
+recursive-include tutorials *.ipynb
+recursive-include tools *.py
+recursive-include tests *.py *.md

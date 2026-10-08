@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hedgehogs"
+dynamic = ["version"]
+description = "Scientific presentation utilities for figures, notebooks, and terminals"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "Hanseul Kang", email = "hanseul.kang@aalto.fi"}
+]
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = [
+    "matplotlib>=3.6",
+    "ipython>=8",
+    "rich>=13.7",
+]
+keywords = [
+    "matplotlib",
+    "scientific-visualisation",
+    "publication",
+    "plotting",
+    "jupyter",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy>=1.10",
+    "pytest>=8",
+]
+
+[project.urls]
+Repository = "https://github.com/PentagonToy/Hedgehogs"
+Issues = "https://github.com/PentagonToy/Hedgehogs/issues"
+Documentation = "https://github.com/PentagonToy/Hedgehogs/blob/main/docs/README.md"
+Changelog = "https://github.com/PentagonToy/Hedgehogs/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "hedgehogs.core.version.__version__"}
+
+[tool.setuptools.package-data]
+hedgehogs = ["py.typed"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = ["presentation_smoke: fast checks for finishing, author control and outlines"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/hedgehogs"]
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
