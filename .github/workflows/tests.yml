@@ -1,0 +1,83 @@
+name: Tests
+
+on:
+  push:
+    paths-ignore:
+      - "**/*.md"
+  pull_request:
+    paths-ignore:
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install package and test tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[dev]"
+
+      - name: Run tests
+        env:
+          MPLBACKEND: Agg
+        run: python -m pytest -q -ra
+
+      - name: Check package types
+        if: matrix.python-version == '3.12'
+        run: python -m mypy
+
+      - name: Compile package
+        run: python -m compileall -q src/hedgehogs
+
+  distribution:
+    name: Distribution
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build and check distributions
+        run: |
+          python -m pip install build twine
+          python -m build
+          python -m twine check --strict dist/*
+
+      - name: Check installed wheel
+        env:
+          MPLBACKEND: Agg
+        run: |
+          python -m pip install dist/*.whl
+          cd "$RUNNER_TEMP"
+          python -c 'import hedgehogs as hdg; assert hdg.__version__; hdg.set_style(); hdg.reset_style()'
+
+      - name: Retain release candidates
+        uses: actions/upload-artifact@v4
+        with:
+          name: hedgehogs-distributions
+          path: dist/*
+          if-no-files-found: error
