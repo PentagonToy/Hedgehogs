@@ -1,6 +1,7 @@
 """Keep point-based presentation proportional to each figure's reference size."""
 
 from functools import wraps
+from contextlib import contextmanager
 from math import isfinite
 from numbers import Real
 from typing import Any, Callable, cast
@@ -22,6 +23,38 @@ from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, PackerBase
 from matplotlib.patches import Patch, Rectangle
 from matplotlib.text import Text
+
+
+@contextmanager
+def _cached_legend_search(figure):
+    """Reuse identical native placement measurements within one draw only."""
+    installed = []
+    for ax in figure.axes:
+        legend = ax.get_legend()
+        if (legend is None or legend._loc != 0 or legend._bbox_to_anchor is not None
+                or '_find_best_position' in legend.__dict__):
+            continue
+        original = legend._find_best_position
+        cache: dict[tuple[Any, ...], Any] = {}
+
+        def find(width, height, renderer, *args, _original=original, _ax=ax, _cache=cache, **kwargs):
+            if args or kwargs:
+                return _original(width, height, renderer, *args, **kwargs)
+            key = (width, height, id(renderer), tuple(_ax.bbox.bounds),
+                   tuple(_ax.get_xlim()), tuple(_ax.get_ylim()),
+                   tuple(_ax.transData.get_matrix().flat))
+            if key not in _cache:
+                _cache[key] = _original(width, height, renderer)
+            return _cache[key]
+
+        legend._find_best_position = find
+        installed.append((legend, find))
+    try:
+        yield
+    finally:
+        for legend, find in installed:
+            if legend.__dict__.get('_find_best_position') is find:
+                del legend._find_best_position
 
 
 class _FigureStyle:
@@ -597,7 +630,9 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     def draw(figure, renderer):
         style = getattr(figure, '_hedgehogs_style', None)
         if style is not None and _reference_size is not None:
-            style.apply(figure, renderer)
+            with _cached_legend_search(figure):
+                style.apply(figure, renderer)
+                return original_draw(figure, renderer)
         return original_draw(figure, renderer)
 
     @wraps(original_tight_layout)

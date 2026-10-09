@@ -429,3 +429,112 @@ def test_default_line_and_legend_strokes_follow_frame_but_explicit_widths_surviv
     handles = legend.legend_handles if hasattr(legend, 'legend_handles') else legend.legendHandles
     assert handles[0].get_linewidth() == default.get_linewidth()
     assert legend._loc == 2
+
+
+@pytest.mark.parametrize('logarithmic', [False, True])
+def test_vector_scatter_overlap_matches_scalar_counts_at_boundaries(logarithmic):
+    import numpy as np
+    from matplotlib.transforms import Bbox
+    fig, ax = plt.subplots()
+    ax.scatter([1, 2, 3, np.nan, 4], [1, 2, 3, 4, np.inf])
+    ax.scatter([], [])
+    if logarithmic:
+        ax.set(xscale='log', yscale='log')
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    points = ax.transData.transform([[1, 1], [3, 3]])
+    boxes = [Bbox.from_extents(*points.flatten()), ax.bbox,
+             Bbox.from_bounds(-100, -100, 1, 1)]
+    offsets = {c: c.get_offset_transform().transform(c.get_offsets()) for c in ax.collections}
+    for box in boxes:
+        count = sum(box.contains(*p) for c in ax.collections
+                    for p in np.ma.filled(offsets[c], np.nan))
+        expected = count * box.width * box.height * .01
+        assert _data_overlap(ax, box, renderer) == pytest.approx(expected)
+        assert _data_overlap(ax, box, renderer, offsets) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize('seed', [1, 17, 20261009])
+def test_vector_legend_search_retains_scalar_selection(seed, monkeypatch):
+    import numpy as np
+    from hedgehogs.plots import presentation
+    rng = np.random.default_rng(seed)
+    fig, ax = plt.subplots()
+    ax.scatter(*rng.normal(size=(2, 300)), label='Samples')
+    ax.scatter(*rng.uniform(-2, 2, size=(2, 100)), label='Selected')
+    legend = ax.legend(loc='best')
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    presentation._place_legend(fig, ax, renderer)
+    vector_location = legend._loc
+    vector_bounds = legend.get_window_extent(renderer).bounds
+
+    def scalar_overlap(axes, box, renderer, offsets=None):
+        return sum(box.contains(*point) for c in axes.collections
+                   for point in c.get_offset_transform().transform(c.get_offsets())) * presentation._area(box) * .01
+
+    monkeypatch.setattr(presentation, '_data_overlap', scalar_overlap)
+    presentation._legend_location(legend, 0)
+    presentation._place_legend(fig, ax, renderer)
+    assert legend._loc == vector_location
+    assert legend.get_window_extent(renderer).bounds == pytest.approx(vector_bounds)
+
+
+def test_native_legend_cache_reuses_geometry_and_restores_on_failure(monkeypatch):
+    from matplotlib.legend import Legend
+    from hedgehogs.plots.rendering import _cached_legend_search
+    fig, ax = plt.subplots()
+    ax.scatter([0, 1], [0, 1], label='Samples')
+    legend = ax.legend(loc='best')
+    renderer = fig._get_renderer()
+    original = Legend._find_best_position
+    calls = []
+
+    def counted(self, *args, **kwargs):
+        calls.append(1)
+        return original(self, *args, **kwargs)
+
+    monkeypatch.setattr(Legend, '_find_best_position', counted)
+    with pytest.raises(RuntimeError):
+        with _cached_legend_search(fig):
+            first = legend._find_best_position(50, 20, renderer)
+            assert legend._find_best_position(50, 20, renderer) == first
+            assert len(calls) == 1
+            ax.set_xlim(-2, 2)
+            legend._find_best_position(50, 20, renderer)
+            assert len(calls) == 2
+            raise RuntimeError('draw failure')
+    assert '_find_best_position' not in legend.__dict__
+    with _cached_legend_search(fig):
+        legend._find_best_position(50, 20, renderer)
+    assert len(calls) == 3
+
+
+@pytest.mark.parametrize('placement', ['best', 'upper right', 'external'])
+def test_cached_draw_matches_uncached_after_edits_and_resize(placement, monkeypatch):
+    from contextlib import nullcontext
+    import numpy as np
+    from hedgehogs.plots import rendering
+    original_cache = rendering._cached_legend_search
+    outcomes = []
+    for cached in (False, True):
+        monkeypatch.setattr(rendering, '_cached_legend_search', original_cache if cached else lambda fig: nullcontext())
+        fig, ax = plt.subplots(figsize=(3.5, 2.65))
+        scatter = ax.scatter([0, .2, .4, .8, 1], [1, .8, .3, .4, .1], label='Samples')
+        options = {'loc': 'upper left', 'bbox_to_anchor': (1, 1)} if placement == 'external' else {'loc': placement}
+        legend = ax.legend(**options)
+        stages = []
+        for edited in (False, True):
+            if edited:
+                scatter.set_offsets([[0, 0], [.2, .1], [.4, .5], [.8, .7], [1, 1]])
+                ax.set(xlim=(-.2, 1.2), xlabel='Changed X', yscale='symlog')
+                legend.get_texts()[0].set_text('Changed samples')
+                fig.set_size_inches(4, 3)
+            prepare(fig)
+            stages.append((ax.get_position().bounds, legend.get_window_extent(fig._get_renderer()).bounds))
+            fig.savefig(io.BytesIO(), format='png')
+            stages.append((ax.get_position().bounds, legend.get_window_extent(fig._get_renderer()).bounds))
+        assert '_find_best_position' not in legend.__dict__
+        outcomes.append(stages)
+        plt.close(fig)
+    assert np.asarray(outcomes[0]) == pytest.approx(np.asarray(outcomes[1]))

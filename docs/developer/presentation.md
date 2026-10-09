@@ -4,20 +4,23 @@ Prioritise readable labels, units, ticks, and legends. Allocate panel area after
 
 ## Reference defaults
 
-`set_style()` applies these values at the reference canvas size. Journal presets and user settings override them.
+`set_style()` applies these base values at the reference canvas size. Journal presets and user settings override them. Finished figures apply the bounded text and outline adjustments described below, so these bases are not unconditional final artist sizes.
 
 | Element | Size | Weight |
 | --- | ---: | --- |
 | Labels and body text | 10.5 pt | Normal |
 | Tick and legend text | 9.5 pt | Normal |
 | Titles | 11.5 pt | Normal |
-| Axis and node borders | 0.8 pt | — |
+| Axis and node borders | 0.9 pt | — |
 | Data lines and tree branches | 1.1 pt | — |
 | Marker diameter | 4 pt | — |
 | Marker area | 16 pt² | — |
 | Marker edges | 0.5 pt | — |
+| Major tick length | 4 pt | — |
 
 Reserve bold for decision conditions and panel identifiers. Font selection prefers Times New Roman, then Times, then DejaVu Serif. These manuscript defaults suit a 12 pt draft; journal requirements take precedence. [PLOS](https://journals.plos.org/plosbiology/s/figures) specifies 8–12 pt figure text, whereas [Nature](https://www.nature.com/nature/for-authors/final-submission) specifies 5–7 pt at final size.
+
+Font availability changes glyph metrics and therefore label margins and legend dimensions. Measure with the actual renderer rather than assuming identical pixel bounds across systems. Minor ticks remain disabled by default. Legend handle length is 1.5, handle-to-text spacing is 0.5, border padding is 0.35 and row spacing is 0.35, in units of the legend font size.
 
 ## Physical calibration
 
@@ -53,9 +56,23 @@ For pairplots, calculate $s=\max(1,L_{min}/L_{ref})$ after reserving label and l
 
 Pairplots and trees manage their own scaling and skip the ordinary renderer multiplier. Pairplot fitting runs during construction; arbitrary later canvas resizing does not repeat it. Ordinary grids preserve point sizes as a readability safeguard, so their glyph-to-panel ratios can differ.
 
-At reference size, a custom `linewidth` gives axes the ratio $0.8/1.1$ and marker edges retain $0.5/1.1$ relative to data lines. Default marker diameter follows `base_fontsize` relative to 10.5 pt, with a 2.5 pt minimum. Constants and reference geometry belong in `plots/typography.py`; see [Implementation ownership](architecture.md) for module responsibilities.
+At reference size, a custom `linewidth` gives axes the ratio $0.9/1.1$ and marker edges retain $0.5/1.1$ relative to data lines. Default marker diameter follows `base_fontsize` relative to 10.5 pt, with a 2.5 pt minimum. Constants and reference geometry belong in `plots/typography.py`; see [Implementation ownership](architecture.md) for module responsibilities.
 
 Finishing is an explicit output choice. Ordinary `plt.show()` retains the existing policy; `hdg.plots.show()` refines default text roles and numeric ticks from styled point bases, measures complete artists, and selects layout candidates. See [Implementation ownership](architecture.md#figure-finishing) for scoring and supported collisions.
+
+## Legend fitting and limits
+
+Ordinary rendering before finishing targets a legend width of 60% of its axes, or 90% of the canvas for a figure legend, and a height of 40% of the corresponding container. These are compactness targets, not unconditional bounds. Automatic fitting retains a 6 pt minimum font size at the reference scale, scaled with the figure. A wider fallback font can reach that minimum before reaching the target width. Explicit external anchors bypass this fitting.
+
+`hdg.plots.show()` and `hdg.plots.save()` use the same finishing procedure. Finishing restores point-sized bases, applies default role sizes and searches internal placements for `loc="best"`; it does not enforce the ordinary renderer's 60% width target. Named locations and explicit anchors retain their placement. Repeated finishing of an unchanged figure must preserve geometry and data; screen and export glyph bounds can still differ between renderers.
+
+Readability and explicit author choices take precedence over compactness. Exceptionally long labels or an oversized legend may require a larger canvas, shorter labels or an explicit external anchor. Automatic fitting does not guarantee that every supplied label fits every canvas. See [User control](#user-control) for overrides.
+
+### Reference behaviour and reproducibility
+
+Matplotlib is the reference for artist semantics, coordinate transforms, text measurement and explicit legend locations. Hedgehogs respects those conventions and adds the finishing policy described above. Automatic `loc="best"` placement is a request to evaluate available space, not a promise of a particular corner or pixel position. Hedgehogs finishing can select a different candidate from native Matplotlib because it also ranks clipping and text overlap.
+
+For unchanged data, settings and rendering environment, automatic placement uses a fixed candidate order and deterministic tie-breaking. Repeated calls must not accumulate changes. This does not promise identical placement across Matplotlib or Hedgehogs versions, installed fonts, backends, output formats or canvas dimensions. A supported upstream change in measurement or automatic placement may therefore change the resulting layout; assess it against readability, containment, preserved data and explicit author choices rather than requiring historical coordinates. Use a named location or explicit anchor when a particular placement is required.
 
 ## User control
 
@@ -76,3 +93,5 @@ Inspect the PDF at its intended physical width. Select fewer variables, split fi
 ## Verification
 
 Check panel dimensions, point sizes, legend placement, and clipping with and without `set_style()`. Compare matrices at equal panel sizes, and test explicit overrides and repeated rendering. Preserve single-panel and grid regression coverage when changing specialised plots. Numerical density tests and visual layout checks address separate requirements.
+
+Run font-sensitive cases with both the configured serif family and explicit DejaVu Serif. A compactness assertion must allow the documented minimum-font exception while checking that representative legends remain within their axes. Test ordinary drawing separately from finishing, including repeated `plots.show()` preparation and saved output. A non-interactive backend verifies rendering and preparation; it does not verify a native display window. See [Validation rules](../../tests/README.md).

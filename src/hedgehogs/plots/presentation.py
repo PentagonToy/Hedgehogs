@@ -9,6 +9,7 @@ from hashlib import blake2b
 from typing import Any
 import warnings
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.container import BarContainer
 from matplotlib.axes import Axes
@@ -54,7 +55,7 @@ def _legend_location(legend: Any, location: Any) -> None:
     setter(location)
 
 
-def _data_overlap(ax: Any, box: Any, renderer: Any) -> float:
+def _data_overlap(ax: Any, box: Any, renderer: Any, offsets: dict | None = None) -> float:
     score = sum(_overlap(box, patch.get_window_extent(renderer))
                 for patch in ax.patches if patch.get_visible())
     score += sum(_overlap(box, image.get_window_extent(renderer))
@@ -73,8 +74,12 @@ def _data_overlap(ax: Any, box: Any, renderer: Any) -> float:
             mesh = ax.transData.transform_bbox(collection.get_datalim(ax.transData))
             score += _overlap(box, mesh)
             continue
-        points = collection.get_offset_transform().transform(collection.get_offsets())
-        score += sum(box.contains(*point) for point in points) * _area(box) * .01
+        points = (offsets[collection] if offsets is not None else
+                  collection.get_offset_transform().transform(collection.get_offsets()))
+        points = np.ma.filled(points, np.nan)
+        inside = ((points[:, 0] >= box.xmin) & (points[:, 0] <= box.xmax)
+                  & (points[:, 1] >= box.ymin) & (points[:, 1] <= box.ymax))
+        score += np.count_nonzero(inside) * _area(box) * .01
     return score
 
 
@@ -85,6 +90,12 @@ def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
         return  # Only loc="best" requests automatic placement.
     excluded = set(legend.findobj())
     texts = _visible_texts(fig, renderer, excluded)
+    # The transform is unchanged throughout this placement search. Retain all
+    # points and reuse display coordinates rather than sampling the data.
+    offsets = {collection: collection.get_offset_transform().transform(collection.get_offsets())
+               for collection in ax.collections
+               if collection.get_visible() and hasattr(collection, 'get_offsets')
+               and not isinstance(collection, (LineCollection, QuadMesh))}
     best_location, best_score = 0, None
     for location in range(11):
         _legend_location(legend, location)
@@ -92,7 +103,7 @@ def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
         area = max(_area(box), 1.)
         score = (max(0., area - _overlap(box, ax.bbox)) / area,
                  sum(_overlap(box, text) for text in texts) / area,
-                 _data_overlap(ax, box, renderer) / area,
+                 _data_overlap(ax, box, renderer, offsets) / area,
                  0 if location == 0 else 1)
         if best_score is None or score < best_score:
             best_location, best_score = location, score

@@ -64,7 +64,10 @@ where = ["src"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-markers = ["presentation_smoke: fast checks for finishing, author control and outlines"]
+markers = [
+    "presentation_smoke: fast checks for finishing, author control and outlines",
+    "load: expensive measurements requiring explicit --run-load",
+]
 
 [tool.mypy]
 python_version = "3.12"

@@ -106,7 +106,7 @@ def set_style(
     axis_lw = lw * REFERENCE_AXES_WIDTH / REFERENCE_LINE_WIDTH
     elw   = lw * REFERENCE_MARKER_EDGE_WIDTH / REFERENCE_LINE_WIDTH
     ms    = max(_MIN_MARKERSIZE, _MARKER_TO_FONT_RATIO * fs)
-    major = 5.0 * s
+    major = 4.0 * s
     minor = 3.0 * s
 
     plt.rcParams.update({
@@ -180,11 +180,11 @@ def set_style(
         "legend.facecolor":      "white",
         "legend.edgecolor":      "black",
         "legend.fancybox":       False,
-        "legend.handlelength":   1.1,
-        "legend.handletextpad":  0.4,
-        "legend.borderpad":      0.25,
+        "legend.handlelength":   1.5,
+        "legend.handletextpad":  0.5,
+        "legend.borderpad":      0.35,
         "legend.borderaxespad":  0.4,
-        "legend.labelspacing":   0.3,
+        "legend.labelspacing":   0.35,
         "legend.columnspacing":  0.8,
         "legend.markerscale":    0.85,
 

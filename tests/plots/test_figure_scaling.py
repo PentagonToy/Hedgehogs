@@ -241,7 +241,9 @@ def test_panel_count_preserves_typography_and_colourbar_size():
     assert colourbar.ax.yaxis.label.get_fontsize() == pytest.approx(10.5)
 
 
-def test_long_legend_is_compact_and_redraws_are_stable():
+@pytest.mark.parametrize('font_family', ['serif', 'DejaVu Serif'])
+def test_long_legend_is_compact_and_redraws_are_stable(font_family):
+    plt.rcParams['font.family'] = font_family
     fig, ax = plt.subplots()
     ax.scatter([0, 1], [0, 1], label='Flamelet Samples')
     ax.scatter([0, 1], [1, 0], label='Selected Samples', marker='x')
@@ -249,7 +251,10 @@ def test_long_legend_is_compact_and_redraws_are_stable():
     fig.canvas.draw()
     width = legend.get_window_extent(fig.canvas.get_renderer()).width
     font = legend.get_texts()[0].get_fontsize()
-    assert width <= ax.bbox.width * 0.6
+    # The 60% compactness target yields to the 6 pt readability floor.
+    # Wider fallback fonts can reach that floor before reaching the target.
+    assert width <= ax.bbox.width
+    assert width <= ax.bbox.width * 0.6 or font == pytest.approx(6)
     assert 6 <= font < 9.5
     for _ in range(3):
         fig.canvas.draw()

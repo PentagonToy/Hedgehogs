@@ -17,7 +17,7 @@ def test_default_style_uses_science_single_column():
     assert plt.rcParams["xtick.labelsize"] == 9.5
     assert plt.rcParams["legend.fontsize"] == 9.5
     assert plt.rcParams["lines.markersize"] == pytest.approx(16 ** 0.5)
-    assert plt.rcParams["axes.linewidth"] == .8
+    assert plt.rcParams["axes.linewidth"] == .9
     assert plt.rcParams["lines.linewidth"] == 1.1
     assert plt.rcParams["axes.xmargin"] == 0.05
     assert plt.rcParams["axes.ymargin"] == 0.05
