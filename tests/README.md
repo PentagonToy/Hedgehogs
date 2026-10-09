@@ -35,30 +35,26 @@ CI checks supported Python versions in parallel. Push settled changes once; allo
 
 ## Explicit load measurements
 
-Load tests are skipped in ordinary pytest runs and automatic CI. Run them only after an explicit request, using `--run-load`; selecting the file or the `load` marker alone does not enable them.
+Ordinary pytest runs and automatic CI skip load tests. Enable them only on explicit request with `--run-load`; selecting their file or marker alone leaves them skipped.
 
 ```bash
-python -m pytest tests/load -q -s --run-load --load-report /path/to/output/scatter-load.json
+python -m pytest tests/load -q --run-load --load-report /path/to/output/scatter-load.json
 ```
 
-The scatter checks use seeded data at 10,000, 100,000 and 1,000,000 points. Both native Matplotlib drawing and Hedgehogs finishing use fixed placement and `loc="best"`, then measure a second unchanged display. The native cases retain the same initial style settings but disable Hedgehogs rendering hooks; finishing can refine typography and placement, so final appearance and placement policies are not identical. Record legend locations and bounds alongside timings. Separate 100,000-point cases measure vector and rasterised PDF output. Native display windows are suppressed; timings cover drawing and `plots.show()` preparation rather than GUI interaction. Data and repeated geometry must remain unchanged.
+| Case | Measurement |
+| --- | --- |
+| 10,000, 100,000 and 1,000,000 points | Native Matplotlib and Hedgehogs, fixed and automatic legends, first and repeated display |
+| Four scatter collections, 100,000 and 1,000,000 total points | Automatic finishing, coordinate preservation and repeat geometry |
+| 100,000-point PDF | Vector and explicitly rasterised export time and file size |
 
-Record the source commit, pending changes, interpreter, library versions and hardware with each result. The JSON report records runtime metadata, timings and PDF sizes. Data generation is outside the timed region; artist creation is reported separately. Measurements are single observations in a shared process with font-cache effects, not statistical benchmarks or machine-independent performance guarantees. No elapsed-time threshold determines success. Keep reports outside the source tree; rerun only when explicitly requested.
+Data generation is outside the timed region. Native cases keep initial style settings but disable Hedgehogs hooks; final typography and placement policies can differ. Display windows are suppressed, so timings cover preparation and drawing. Measurements are single observations with shared-process cache effects; elapsed time has no pass threshold.
 
-## Tests and performance
+Store JSON reports outside the source tree with source changes and hardware details. Reports record the interpreter, library versions, source commit, pending changes, timings and output sizes. Rerun only when explicitly requested.
 
-### Font-sensitive figure checks
+## Regression criteria
 
-When changing typography, tick lengths or legend spacing, run affected cases with both the configured serif family and explicit DejaVu Serif. A local Times New Roman result does not establish fallback-font behaviour on Linux. Measure bounds with the current renderer and check minimum readable text, placement, author overrides and stable repeated draws.
+Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Run font-sensitive cases with the configured serif family and DejaVu Serif. Ordinary legend fitting may exceed its 60% width target at the scaled 6 pt font floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
 
-The ordinary legend renderer targets 60% of axes width but retains a 6 pt reference-scale font floor. Tests must allow the target to be exceeded when that floor is reached; representative legends must still fit their axes. Do not remove the readability floor or relax containment merely to satisfy a pixel-width assertion. Finishing through `plots.show()` or `plots.save()` has a separate placement policy; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
+Same-environment repeatability does not require identical automatic placement across versions or with native Matplotlib. Compare cached and uncached paths when validating a result-preserving optimisation. Inspect upstream layout changes against the behavioural criteria before updating expectations; see [Reference behaviour and reproducibility](../docs/developer/presentation.md#reference-behaviour-and-reproducibility).
 
-Exercise repeated finishing and output without changing data or accumulating size changes. Distinguish non-interactive preparation and export checks from native GUI display checks when reporting coverage. Documentation-only updates need diff, link and numerical consistency checks, without rerunning Python tests.
-
-### Regression scope
-
-Add tests for observable behaviour and regressions rather than mirroring implementation details. Preserve coverage for author overrides, repeated rendering, scientific coordinates and output formats. Optimise a slow test only after measuring its cost; do not remove coverage merely to shorten a run.
-
-Separate deterministic repeatability in the same environment from equality across versions or with native Matplotlib. Use native Matplotlib as the reference for artist and placement semantics, but do not require Hedgehogs finishing to choose its exact automatic legend position. Compare cached and uncached paths under the same conditions when validating a result-preserving optimisation. Across dependency versions, verify data preservation, explicit locations and anchors, bounded readable sizing, representative containment and absence of cumulative drift. If an upstream change moves an automatic legend, inspect the cause before updating expectations; a changed position alone is not a regression, and upstream changes do not excuse clipping, lost data or ignored author settings. See [Reference behaviour and reproducibility](../docs/developer/presentation.md#reference-behaviour-and-reproducibility).
-
-Recent local full-suite runs took about 20–30 seconds, while Linux CI test jobs took about 53–70 seconds per Python version. Those timings depend on the environment. Separate test duration, CI setup and the time spent designing changes when reporting a delay.
+Distinguish non-interactive rendering checks from native GUI checks. Measure test costs before optimising a slow case; retain its behavioural coverage. Keep timings and experiment results in execution reports.

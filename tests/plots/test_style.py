@@ -42,7 +42,7 @@ def test_markers_follow_typography_without_becoming_too_small():
 
 def test_default_margin_keeps_boundary_markers_inside_axes():
     hdg.set_style()
-    fig, ax = hdg.subplots()
+    fig, ax = plt.subplots()
     line, = ax.plot([0.0, 1.0], [0.0, 1.0], marker="o")
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
@@ -56,64 +56,20 @@ def test_default_margin_keeps_boundary_markers_inside_axes():
     hdg.reset_style()
 
 
-def test_subplots_creates_single_axes():
-    fig, ax = hdg.subplots(figsize=(4, 3))
-    ax.plot([0, 1], [0, 1])
-    assert fig.axes == [ax]
-    plt.close(fig)
-
-
-def test_subplots_supports_gridspec():
-    fig, axes = hdg.subplots(
-        nrows=2,
-        ncols=2,
-        gridspec_kw={"width_ratios": [2, 1]},
-    )
-    assert axes.shape == (2, 2)
-    assert len(fig.axes) == 4
-    plt.close(fig)
-
-
-def test_subplots_accepts_width_shortcut():
-    fig, axes = hdg.subplots(1, 2, widths=[2, 1])
-    assert len(axes) == 2
-    assert axes[0].get_position().width > axes[1].get_position().width
-    plt.close(fig)
-
-
-def test_subplots_supports_constrained_layout():
-    fig, axes = hdg.subplots(
-        ncols=2,
-        layout="constrained",
-    )
-    assert len(axes) == 2
-    assert fig.get_constrained_layout()
-    plt.close(fig)
-
-
-def test_subplots_forwards_shared_axis_configuration():
-    fig, axes = hdg.subplots(1, 2, sharex=True, sharey="all")
-
-    assert axes[0].get_shared_x_axes().joined(axes[0], axes[1])
-    assert axes[0].get_shared_y_axes().joined(axes[0], axes[1])
-    plt.close(fig)
-
-
 @pytest.mark.parametrize("journal", ["nature", "science", "ieee", "aps"])
-def test_journal_presets_apply(journal):
-    options = hdg.set_journal_style(journal)
-    assert tuple(plt.rcParams["figure.figsize"]) == options["figure_size"]
-    assert plt.rcParams["font.size"] == options["base_fontsize"]
-    hdg.reset_style()
-
-
-def test_journal_typography_is_stable_across_column_widths():
-    single = hdg.set_journal_style("science", column="single")
+def test_journal_dimensions_are_geometry_only(journal):
+    hdg.set_style(figure_size=hdg.figsize(journal, "single"))
     single_fontsize = plt.rcParams["font.size"]
-    double = hdg.set_journal_style("science", column="double")
-    assert single["base_fontsize"] == double["base_fontsize"]
+    hdg.set_style(figure_size=hdg.figsize(journal, "double"))
     assert plt.rcParams["font.size"] == single_fontsize
+    assert hdg.figsize(journal, "double")[0] > hdg.figsize(journal, "single")[0]
     hdg.reset_style()
+
+
+@pytest.mark.parametrize('options', [('unknown', 'single'), ('science', 'triple')])
+def test_journal_dimensions_reject_unknown_selections(options):
+    with pytest.raises(ValueError):
+        hdg.figsize(*options)
 
 
 def test_save_supports_multiple_formats(tmp_path):
@@ -125,9 +81,9 @@ def test_save_supports_multiple_formats(tmp_path):
     plt.close(fig)
 
 
-def test_science_size_and_journal_subplots():
+def test_science_dimensions_with_native_subplots():
     assert hdg.figsize("science") == (2.24, 2.20)
-    fig, _ = hdg.subplots(journal="science", column="double")
+    fig, _ = plt.subplots(figsize=hdg.figsize("science", "double"))
     assert tuple(fig.get_size_inches()) == (4.76, 3.40)
     plt.close(fig)
 

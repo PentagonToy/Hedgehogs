@@ -8,31 +8,10 @@ import hedgehogs as hdg
 
 def test_public_api():
     expected = [
-        "EPS",
-        "Palette",
-        "get_palette",
-        "build_color_map",
-        "build_style_map",
-        "register_palette",
-        "save_palette",
-        "load_palette",
-        "set_style",
-        "reset_style",
-        "journal_preset",
-        "set_journal_style",
-        "figsize",
-        "subplots",
-                "finalize",
-        "style_colorbar",
-        "annotate_panels",
-        "enable_minor_ticks",
-        "apply_grid",
-        "plots",
-        "Table",
-        "Progress",
-        "echo",
-        "rule",
-        "info",
+        "EPS", "Palette", "get_palette", "build_color_map", "build_style_map",
+        "register_palette", "save_palette", "load_palette", "set_style",
+        "reset_style", "figsize", "figures", "plots", "Table", "Progress",
+        "echo", "rule", "info",
     ]
 
     missing = [name for name in expected if not hasattr(hdg, name)]
@@ -51,12 +30,12 @@ def test_plotting_api():
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], color=palette[0])
 
-    hdg.finalize(ax)
-    hdg.enable_minor_ticks(ax)
-    hdg.apply_grid(ax)
-    hdg.annotate_panels([ax])
+    hdg.figures.enable_minor_ticks(ax)
+    hdg.figures.apply_grid(ax)
+    hdg.figures.annotate_panels([ax])
 
     plt.close(fig)
+    hdg.reset_style()
 
 
 def test_table_api():
@@ -107,3 +86,15 @@ def test_public_introspection_is_clean_and_describes_new_interfaces():
     assert signature.parameters['fig'].default is None
     assert 'current pyplot figure' in pydoc.render_doc(hdg.plots.save)
     assert 'formatted table rows' in pydoc.render_doc(hdg.Table.to_dataframe)
+
+
+def test_figure_helpers_have_one_namespace_without_removed_wrappers():
+    expected = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks']
+    assert hdg.figures.__all__ == expected
+    assert dir(hdg.figures) == sorted(expected)
+    for name in expected:
+        assert callable(getattr(hdg.figures, name))
+        assert not hasattr(hdg, name)
+    for name in ['subplots', 'journal_preset', 'set_journal_style', 'finalize']:
+        assert not hasattr(hdg, name)
+        assert not hasattr(hdg.figures, name)

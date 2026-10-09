@@ -98,3 +98,29 @@ def test_scatter_pdf_load(rasterized, measurements, tmp_path):
     finally:
         plt.close(fig)
         hdg.reset_style()
+
+
+@pytest.mark.parametrize('points', [100_000, 1_000_000])
+def test_multiple_scatter_load(points, measurements, monkeypatch):
+    data = np.random.default_rng(20261009).normal(size=(points, 2))
+    hdg.set_style()
+    fig, ax = plt.subplots(figsize=(3.5, 2.65))
+    try:
+        parts = np.array_split(data, 4)
+        scatters = [ax.scatter(*part.T, label=f'Samples {index + 1}') for index, part in enumerate(parts)]
+        ax.set(xlabel='X', ylabel='Y')
+        ax.legend(loc='best')
+        monkeypatch.setattr(plt, 'show', lambda **kwargs: None)
+        display = lambda: hdg.plots.show(fig, block=False)
+        first = timed(display)
+        bounds = ax.get_position().bounds
+        repeat = timed(display)
+        assert ax.get_position().bounds == pytest.approx(bounds)
+        for scatter, part in zip(scatters, parts):
+            assert np.array_equal(scatter.get_offsets(), part)
+            assert not scatter.get_rasterized()
+        measurements.append({'points': points, 'collections': 4, 'mode': 'hedgehogs-best-multiple',
+                             'first_show_s': first, 'repeat_show_s': repeat})
+    finally:
+        plt.close(fig)
+        hdg.reset_style()

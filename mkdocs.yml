@@ -1,0 +1,79 @@
+site_name: Hedgehogs
+site_description: Scientific figures and reports for Python
+site_url: https://pentagontoy.github.io/Hedgehogs/
+repo_url: https://github.com/PentagonToy/Hedgehogs
+repo_name: PentagonToy/Hedgehogs
+edit_uri: ''
+strict: true
+hooks:
+  - tools/docs/site_hooks.py
+theme:
+  name: material
+  logo: assets/artwork/assets/icon-symbol.svg
+  favicon: assets/artwork/assets/icon-symbol.svg
+  font: false
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+plugins:
+  - search
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.superfences
+extra_css:
+  - stylesheets/brand.css
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
+nav:
+  - Home: index.md
+  - Get started:
+      - Installation: installation.md
+      - First figure: quick-start.md
+  - Examples:
+      - Overview: tutorials.md
+      - Plots: tutorials/plots.md
+      - Tables: tutorials/tables.md
+      - Progress and terminal: tutorials/cli.md
+  - Gallery: gallery.md
+  - API:
+      - Overview: api/README.md
+      - Figures: api/figures.md
+      - Plots: api/plots.md
+      - Palettes: api/palettes.md
+      - Tables: api/tables.md
+      - Terminal and progress: api/terminal.md
+  - Development:
+      - Overview: overview.md
+      - Presentation rules: developer/presentation.md
+      - Architecture: developer/architecture.md
+      - Releases: developer/release.md
+      - Documentation site: developer/documentation.md
+  - Sources: versions.md

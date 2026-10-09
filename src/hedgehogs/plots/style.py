@@ -1,7 +1,6 @@
 """Publication-quality Matplotlib style configuration."""
 
-from collections.abc import Iterable, Mapping
-from typing import Any, Literal, cast
+from collections.abc import Mapping
 
 import matplotlib.pyplot as plt
 
@@ -46,26 +45,18 @@ _JOURNAL_PRESETS = {
     "nature": {
         "single": (3.50, 2.65),
         "double": (7.20, 4.80),
-        "base_fontsize": 10.0,
-        "linewidth": 1.0,
     },
     "science": {
         "single": REFERENCE_CANVAS_INCHES,
         "double": (4.76, 3.40),
-        "base_fontsize": REFERENCE_LABEL_POINTS,
-        "linewidth": 1.1,
     },
     "ieee": {
         "single": (3.50, 2.55),
         "double": (7.16, 4.80),
-        "base_fontsize": 9.0,
-        "linewidth": 0.9,
     },
     "aps": {
         "single": (3.40, 2.60),
         "double": (7.00, 4.80),
-        "base_fontsize": 10.0,
-        "linewidth": 1.0,
     },
 }
 
@@ -216,96 +207,12 @@ def reset_style() -> None:
     _active_palette = None
 
 
-def journal_preset(name: str = "science", column: str = "single") -> dict[str, Any]:
-    """Return a copy of a journal-oriented style preset.
-
-    Presets are practical starting points rather than publisher guarantees;
-    authors should still check the current journal instructions.
-    """
+def figsize(name: str = "science", column: str = "single") -> tuple[float, float]:
+    """Return journal starting dimensions in inches for single/double columns."""
     key = str(name).lower()
     column_key = str(column).lower()
-
     if key not in _JOURNAL_PRESETS:
-        raise ValueError(
-            f"Unknown journal {name!r}; expected one of "
-            f"{tuple(_JOURNAL_PRESETS)}."
-        )
+        raise ValueError(f"Unknown journal {name!r}; expected one of {tuple(_JOURNAL_PRESETS)}.")
     if column_key not in {"single", "double"}:
         raise ValueError("column must be 'single' or 'double'.")
-
-    source = _JOURNAL_PRESETS[key]
-    figure_size = cast(tuple[float, float], source[column_key])
-    return {
-        "figure_size": figure_size,
-        "base_fontsize": source["base_fontsize"],
-        "linewidth": source["linewidth"],
-    }
-
-
-def set_journal_style(
-    name: str = "science",
-    column: str = "single",
-    **overrides: Any,
-) -> dict[str, Any]:
-    """Apply a journal preset, with optional :func:`set_style` overrides."""
-    options = journal_preset(name, column=column)
-    options.update(overrides)
-    set_style(**options)
-    return options
-
-
-def figsize(name: str = "science", column: str = "single") -> tuple[float, float]:
-    """Return the configured figure size for a journal and column width."""
-    return cast(tuple[float, float], journal_preset(name, column)["figure_size"])
-
-
-def subplots(
-    nrows: int = 1,
-    ncols: int = 1,
-    *,
-    figsize: tuple[float, float] | None = None,
-    journal: str | None = None,
-    column: str = "single",
-    subplot: Mapping[str, float] | None = None,
-    gridspec_kw: Mapping[str, Any] | None = None,
-    widths: Iterable[float] | None = None,
-    heights: Iterable[float] | None = None,
-    sharex: bool | Literal["none", "all", "row", "col"] = False,
-    sharey: bool | Literal["none", "all", "row", "col"] = False,
-    squeeze: bool = True,
-    layout: str | None = None,
-    **ax_kw: Any,
-) -> tuple[Any, Any]:
-    """Create a single- or multi-panel figure with stable subplot margins."""
-    if figsize is not None and journal is not None:
-        raise ValueError("figsize and journal cannot be used together.")
-    fs = figsize or (journal_preset(journal, column)["figure_size"] if journal else plt.rcParams["figure.figsize"])
-    sp = {key: cast(Any, plt.rcParams)[f"figure.subplot.{key}"] for key in _DEFAULT_SUBPLOT}
-    sp.update(subplot or {})
-    grid = dict(gridspec_kw or {})
-    if widths is not None:
-        if "width_ratios" in grid:
-            raise ValueError("widths and gridspec_kw['width_ratios'] cannot be used together.")
-        grid["width_ratios"] = list(widths)
-    if heights is not None:
-        if "height_ratios" in grid:
-            raise ValueError("heights and gridspec_kw['height_ratios'] cannot be used together.")
-        grid["height_ratios"] = list(heights)
-    fig, axes = plt.subplots(
-        nrows=nrows,
-        ncols=ncols,
-        figsize=fs,
-        gridspec_kw=grid or None,
-        sharex=sharex,
-        sharey=sharey,
-        squeeze=squeeze,
-        layout=layout,
-        subplot_kw=ax_kw or None,
-    )
-
-    if subplot is not None and hasattr(fig, "_hedgehogs_style"):
-        fig._hedgehogs_style.square_axes = False
-    if layout not in {"constrained", "compressed"}:
-        fig.subplots_adjust(**sp)
-
-    return fig, axes
+    return _JOURNAL_PRESETS[key][column_key]

@@ -11,22 +11,8 @@ from .core.palette import (
     save_palette,
     load_palette,
 )
-from .plots.style import (
-    set_style,
-    reset_style,
-    journal_preset,
-    set_journal_style,
-    figsize,
-    subplots,
-)
-from .plots.helpers import (
-    finalize,
-    style_colorbar,
-    annotate_panels,
-    enable_minor_ticks,
-    apply_grid,
-)
-from . import plots
+from .plots.style import set_style, reset_style, figsize
+from . import figures, plots
 from .tables import Table
 from .terminal import Progress
 from .terminal import echo, rule
@@ -43,15 +29,8 @@ __all__ = [
     "load_palette",
     "set_style",
     "reset_style",
-    "journal_preset",
-    "set_journal_style",
     "figsize",
-    "subplots",
-    "finalize",
-    "style_colorbar",
-    "annotate_panels",
-    "enable_minor_ticks",
-    "apply_grid",
+    "figures",
     "plots",
     "Table",
     "Progress",

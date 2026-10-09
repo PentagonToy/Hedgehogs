@@ -27,7 +27,7 @@ Construct a table with text and HTML representations.
 hdg.Table(title="Analysis", columns=None, mode="static", *, formatters=None)
 ```
 
-`mode` is `static`, `live`, or `dynamic`. Public methods are `add_row()`, `update_row()`, `sort()`, `show()`, `finish()`, `to_text()`, `to_html()`, `to_csv()`, and `to_latex()`.
+`mode` selects static or live display.
 
 | Mode | Intermediate updates | Final redirected output |
 | --- | --- | --- |
@@ -42,9 +42,9 @@ hdg.Table(title="Analysis", columns=None, mode="static", *, formatters=None)
 | `mode` | `"static"` | `static`, `live`, or `dynamic` |
 | `formatters` | `None` | Mapping by column name or index, or sequence in column order |
 
-Unknown modes and row-width mismatches raise `ValueError`. Formatters accept column names, indices, or an ordered sequence; values can contain format specifications or callables.
+Unknown modes raise `ValueError`. Formatters accept column names, indices or an ordered sequence; values contain format specifications or callables.
 
-Rows contain formatted strings. `sort(column=0, *, reverse=False, key=None)` sorts in place and returns the table. Pass `key=float` for numeric ordering.
+Rows contain formatted strings; retain original data for numerical analysis.
 
 ### `Table.from_dataframe`
 

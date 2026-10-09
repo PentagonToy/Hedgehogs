@@ -13,7 +13,7 @@ python -m twine check --strict /path/to/release/dist/*
 
 Inspect both the wheel and source archive. The wheel contains the package and `py.typed`; the source archive also includes documentation, tests, tutorials and rendering tools. Install the wheel outside the source checkout and verify its version, public imports and figure export. Build a wheel from the source archive to verify that it is self-contained.
 
-The GitHub Tests workflow runs Python 3.10, 3.12 and 3.13 tests, then builds and checks distribution files. Markdown-only pushes skip runtime CI; dispatch the workflow manually before release when those are the only changes. Its `hedgehogs-distributions` artifact retains the release candidates. A successful local run alone does not establish that the remote workflow passed.
+The GitHub Tests workflow runs Python 3.10, 3.12 and 3.13 tests, then builds and checks distribution files. Markdown-only pushes skip runtime CI; dispatch the workflow manually before release when those are the only changes. Its `hedgehogs-distributions` artefact retains the release candidates. A successful local run alone does not establish that the remote workflow passed.
 
 ## Publish
 

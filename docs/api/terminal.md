@@ -27,8 +27,6 @@ hdg.Progress(iterable=None, total=None, desc="", width=40, mininterval=0.1, smoo
 
 Invalid constructor values raise `ValueError`; `update()` after `finish()` raises `RuntimeError`.
 
-Methods: `update(n=1)`, `set_description(desc)`, `set(**metrics)`, `finish()`, `to_text()`, and `to_html()`. `Progress` also supports a context manager.
-
 Calls to `set()` update metrics immediately but remain subject to `mininterval`; the next eligible `set()` or `update()` refresh displays the latest values. `finish()` always preserves the final state.
 
 | Parameter | Type | Default | Constraint or meaning |
@@ -102,4 +100,4 @@ progress.to_html()
 ```python
 hdg.info()
 ```
- `info()` prints the Hedgehogs and Matplotlib versions and returns the same text as a string.
+`info()` prints the Hedgehogs and Matplotlib versions and returns the same text as a string.

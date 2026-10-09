@@ -45,7 +45,7 @@ dev = [
 [project.urls]
 Repository = "https://github.com/PentagonToy/Hedgehogs"
 Issues = "https://github.com/PentagonToy/Hedgehogs/issues"
-Documentation = "https://github.com/PentagonToy/Hedgehogs/blob/main/docs/README.md"
+Documentation = "https://pentagontoy.github.io/Hedgehogs/"
 Changelog = "https://github.com/PentagonToy/Hedgehogs/blob/main/CHANGELOG.md"
 
 [tool.setuptools]

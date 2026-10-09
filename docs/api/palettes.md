@@ -61,17 +61,7 @@ hdg.save_palette("models", "models.json")
 hdg.load_palette("models.json", name="imported-models")
 ```
 
-Registration lasts for the current Python process. Mapping order determines colour order. For custom colour names, prefer lowercase keys because lookup converts names to lowercase. An iterable of colours can instead supply `names=[...]`; omit `names` when passing a mapping. Save a palette as JSON to reuse it in another session.
-
-`overwrite=True` replaces an existing registration. `load_palette()` uses an explicit `name`, then the stored JSON name, then the file stem. Saved JSON contains `name`, `names` and `colors`.
-
-## Maintaining the colour tables
-
-The tables mirror `core/palette.py`. After changing built-in colours, update their order and HEX values here, then regenerate swatches from the repository root:
-
-```bash
-python tools/docs/render_palette_swatches.py others/palettes
-```
+Registration lasts for the current Python process; JSON transfers palettes between sessions. See [Custom palettes](#custom-palettes) for validation and file naming.
 
 ## Palette objects
 
@@ -81,7 +71,7 @@ python tools/docs/render_palette_swatches.py others/palettes
 hdg.Palette(names, colors)
 ```
 
-`names` and `colors` are ordered iterables. The object supports integer and colour-name access, slicing, iteration, `len()`, `keys()`, `values()` and `items()`. Integer indices cycle through the available colours; slices return lists. An unknown colour name raises `KeyError`. Construct validated custom palettes through `register_palette()`.
+`names` and `colors` are ordered iterables. See [Select colours](#select-colours) for access and iteration. Use `register_palette()` to construct validated custom palettes.
 
 ### `get_palette`
 
@@ -91,7 +81,7 @@ Read a registered palette or select colours from an existing `Palette`.
 hdg.get_palette(palette="okabe-ito", n=None) -> Palette
 ```
 
-Return a palette with index, slice, and colour-name access. Built-in names include `okabe-ito`, `tableau10`, `paul-tol-vibrant`, `paul-tol-bright`, `paul-tol-muted`, and `ibm`.
+Returns a `Palette`; see [Built-in palettes](#built-in-palettes) for names and colour order.
 
 | Parameter | Default | Meaning |
 | --- | --- | --- |
@@ -111,7 +101,7 @@ hdg.build_color_map(labels, palette="okabe-ito") -> dict[object, str]
 hdg.build_style_map(labels, palette="okabe-ito") -> dict[object, dict[str, str]]
 ```
 
-`labels` is an iterable of hashable labels; `palette="okabe-ito"` accepts a registered name or `Palette`. Both functions preserve first-occurrence order. `build_style_map()` returns keyword dictionaries accepted by `Axes.plot()`.
+`labels` contains hashable labels; `palette` accepts a registered name or `Palette`. `build_style_map()` returns keyword dictionaries for `Axes.plot()`. See [Assign series styles](#assign-series-styles) for ordering and cycles.
 
 ## Custom palettes
 
@@ -123,6 +113,8 @@ hdg.save_palette(name, path) -> Path
 hdg.load_palette(path, *, name=None, overwrite=False) -> Palette
 ```
 
-`colors` accepts a mapping of names to Matplotlib colours, or an iterable with optional `names`. Omitted names are generated as `color-1`, `color-2`, and so on. Empty palettes, invalid colours, duplicate colour names, and mismatched lengths raise `ValueError`. An existing palette requires `overwrite=True`. `save_palette()` writes JSON and returns its path; `load_palette()` reads the JSON, registers the palette, and returns a `Palette`.
+`colors` accepts an ordered mapping of names to Matplotlib colours, or an iterable with optional `names`. Omit `names` for mappings; unnamed iterables receive `color-1`, `color-2`, and so on. Prefer lowercase names because lookup lowercases its input. Empty palettes, invalid colours, duplicate names and mismatched lengths raise `ValueError`. Replacing a registration requires `overwrite=True`.
+
+`save_palette()` writes `name`, `names` and `colors` to JSON and returns its path. `load_palette()` registers the file and returns a `Palette`; its name comes from an explicit `name`, the JSON name or the file stem, in that order.
 
 See the [figure guide](figures.md) for styling and export.

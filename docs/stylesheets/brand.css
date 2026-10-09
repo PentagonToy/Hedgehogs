@@ -1,0 +1,50 @@
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #005b8e;
+  --md-primary-fg-color--light: #0072b2;
+  --md-primary-fg-color--dark: #00466d;
+  --md-accent-fg-color: #0072b2;
+  --md-typeset-a-color: #0072b2;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #142a3b;
+  --md-primary-fg-color--light: #244b68;
+  --md-primary-fg-color--dark: #101f2b;
+  --md-accent-fg-color: #56b4e9;
+  --md-typeset-a-color: #56b4e9;
+  --md-default-bg-color: #12181f;
+}
+
+.md-header__button.md-logo img {
+  padding: 2px;
+  background: white;
+  border-radius: 3px;
+}
+
+.md-typeset {
+  line-height: 1.65;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset h1 {
+  color: var(--md-default-fg-color);
+  margin-bottom: 1em;
+}
+
+.md-nav__link.md-nav__link--active {
+  font-weight: 600;
+  color: var(--md-typeset-a-color);
+}
+
+
+.hedgehogs-logo { text-align: center; margin: 1rem 0 1.5rem; }
+.hedgehogs-logo img { width: 210px; max-width: 55vw; }
+.md-typeset img[src*="assets/gallery/"] { display: block; width: 520px; max-width: 100%; margin: 1.5rem auto; background: white; border-radius: 4px; }
+
+.md-typeset .notebook-output { display: block; max-width: 100%; max-height: 650px; margin: 1rem auto; background: white; border-radius: 4px; }

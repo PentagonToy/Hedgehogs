@@ -8,10 +8,12 @@
 
 **Scientific figures and reports for Python.**
 
+[Documentation](https://pentagontoy.github.io/Hedgehogs/) · [Installation](https://pentagontoy.github.io/Hedgehogs/installation/) · [API](https://pentagontoy.github.io/Hedgehogs/api/)
+
 Hedgehogs prepares Matplotlib figures and presents tables, progress and status messages in notebooks and terminals.
 
 - Journal-oriented figure presets for single- and double-column layouts.
-- Colour-blind-friendly palettes, including Okabe–Ito and Paul Tol schemes.
+- Colour-blind-friendly palettes, such as Okabe–Ito, Paul Tol and IBM schemes.
 - Consistent figure dimensions across local and remote notebook display and export.
 - Clear tables, status messages and progress bars in notebooks, terminals and redirected logs.
 
@@ -95,6 +97,8 @@ hdg.rule("Summary")
 Terminal output includes colour where supported. Redirected output remains plain; `NO_COLOR` and `TERM=dumb` disable colour.
 
 ## Documentation and tutorials
+
+Read the [documentation site](https://pentagontoy.github.io/Hedgehogs/) for installation, first use, a gallery and API references.
 
 Use the [documentation roadmap](https://github.com/PentagonToy/Hedgehogs/blob/main/docs/README.md) for guides, API references and developer documentation. Runnable tutorials cover [plots](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/plots.ipynb), [tables](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/tables.ipynb), and [CLI output](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/cli.ipynb).
 

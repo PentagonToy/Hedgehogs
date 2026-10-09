@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+Move panel, colour-bar, grid and minor-tick helpers to `hdg.figures`. Remove the former top-level aliases, `subplots`, `journal_preset`, `set_journal_style` and `finalize`. Create axes with `plt.subplots()`, configure styles with `set_style(figure_size=figsize(...))`, and finish figures with `plots.show()` or `plots.save()`. Custom tick formatting remains with Matplotlib.
+
 ## 0.0.1 — 8 October 2026
 
 Initial Hedgehogs development release, adapted from Onsaemiro. Includes figure styling and finishing, native tree and pair plots, notebook and terminal tables, palettes and progress reporting.

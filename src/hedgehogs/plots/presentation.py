@@ -5,6 +5,7 @@ legend placement. Keep author sizes and scientific coordinates unchanged.
 """
 
 from itertools import combinations
+from contextlib import contextmanager
 from hashlib import blake2b
 from typing import Any
 import warnings
@@ -96,15 +97,15 @@ def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
                for collection in ax.collections
                if collection.get_visible() and hasattr(collection, 'get_offsets')
                and not isinstance(collection, (LineCollection, QuadMesh))}
-    best_location, best_score = 0, None
-    for location in range(11):
+    best_location, best_score = 1, None
+    for location in range(1, 11):
         _legend_location(legend, location)
         box = legend.get_window_extent(renderer)
         area = max(_area(box), 1.)
         score = (max(0., area - _overlap(box, ax.bbox)) / area,
                  sum(_overlap(box, text) for text in texts) / area,
                  _data_overlap(ax, box, renderer, offsets) / area,
-                 0 if location == 0 else 1)
+                 location)
         if best_score is None or score < best_score:
             best_location, best_score = location, score
     _legend_location(legend, best_location)
@@ -230,6 +231,26 @@ def _signature(fig: Any) -> tuple[Any, ...]:
     return tuple(parts)
 
 
+@contextmanager
+def _defer_auto_legends(fig):
+    """Measure automatic legends without resolving their position repeatedly."""
+    deferred = []
+    try:
+        for ax in fig.axes:
+            legend = ax.get_legend()
+            if (legend is None or not legend.get_visible() or legend._loc != 0
+                    or legend._bbox_to_anchor is not None):
+                continue
+            deferred.append((legend, legend.get_in_layout()))
+            _legend_location(legend, 1)
+            legend.set_in_layout(False)
+        yield
+    finally:
+        for legend, in_layout in deferred:
+            _legend_location(legend, 0)
+            legend.set_in_layout(in_layout)
+
+
 def prepare(fig: Figure) -> None:
     """Finish a figure in place; repeated calls do not rescale its artists."""
     if not isinstance(fig, Figure):
@@ -272,13 +293,16 @@ def prepare(fig: Figure) -> None:
         keys = ('left', 'right', 'bottom', 'top', 'wspace', 'hspace')
         state.values.setdefault(target, {}).setdefault(
             'layout_base', {key: getattr(target.subplotpars, key) for key in keys})
-    target.canvas.draw()
-    renderer = target._get_renderer()
-    if state is not None:
-        from .typography import refine_presentation
-        refine_presentation(target, state, _bar_annotations)
-        target.canvas.draw()
+    with _defer_auto_legends(target):
+        # Resolve artist geometry without painting all data into the canvas.
+        measure = getattr(target, 'draw_without_rendering', target.canvas.draw)
+        measure()
         renderer = target._get_renderer()
+        if state is not None:
+            from .typography import refine_presentation
+            refine_presentation(target, state, _bar_annotations)
+            measure()
+            renderer = target._get_renderer()
     _separate_bar_labels(target, renderer)
     for ax in target.axes:
         _place_legend(target, ax, renderer)

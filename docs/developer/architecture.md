@@ -1,6 +1,6 @@
 # Implementation ownership
 
-Keep public configuration in `hedgehogs` and specialised drawings in `hedgehogs.plots`. Matplotlib owns figures and artists; Hedgehogs supplies style, layout, and portable output.
+Keep style configuration in `hedgehogs`, explicit artist helpers in `hedgehogs.figures` and specialised drawings and output in `hedgehogs.plots`. Matplotlib owns figures and artists; Hedgehogs supplies style, layout, and portable output.
 
 | Module | Responsibility |
 | --- | --- |
@@ -11,7 +11,7 @@ Keep public configuration in `hedgehogs` and specialised drawings in `hedgehogs.
 | `plots/tree.py` | Decision-tree labels, node layout, and drawing |
 | `plots/pairplot.py` | Numeric-column selection, density estimates, and scatter matrices |
 | `plots/output.py` | Current-figure selection and multi-format saving |
-| `plots/helpers.py` | Adjustments to existing figures |
+| `figures.py` | Explicit panel, colour-bar, grid and minor-tick adjustments |
 | `core/palette.py` | Palette definitions and series styles |
 | `tables/table.py` | Formatted tables and exports |
 | `terminal/progress.py`, `terminal/output.py` | Progress and status output |
@@ -39,29 +39,28 @@ Keep the dependency direction explicit: presentation modules may import `core`; 
 
 ## Rendering lifecycle
 
-`set_style()` configures `rcParams` and installs rendering hooks. New figures retain their reference size. Hooks apply sizing and layout before drawing or export; `reset_style()` restores Matplotlib methods and defaults.
+`set_style()` configures `rcParams` and installs rendering hooks. Figures retain their reference size; `reset_style()` restores Matplotlib methods and defaults. Option wrappers distinguish explicit font and stroke choices from omitted defaults. Hooks must avoid duplicate installation and preserve subsequent third-party replacements.
 
-Option wrappers record explicit font and stroke choices on labels, titles, legends, bar labels and tick methods. This distinguishes an explicit default-sized choice from an omitted option. Keep original methods and installed wrappers distinct. Repeated activation must avoid duplicate wrappers, and restoration must preserve later third-party replacements. Explicit artist values remain editable; proportional resizing may scale them, but must avoid cumulative changes or size caps.
+During ordinary styled draws, a local cache reuses native automatic legend searches with matching dimensions, renderer, axes bounds, limits and transform matrix. Remove temporary wrappers and cached results after each draw, including on failure. Explicit anchors and instance search overrides bypass the cache.
 
 ## Figure finishing
 
-`plots.show()` and `plots.save()` share `presentation.prepare()`. Ordinary rendering hooks remain active for existing callers. Finishing marks the selected figure, restores cached point-sized bases, and avoids a second canvas multiplier. Changes made after a previous draw are retained where the cache records them. `typography.refine_presentation()` applies bounded default role sizes and physical tick spacing before collision fitting.
+`plots.show()` and `plots.save()` share `presentation.prepare()`:
 
-Measure legend candidates with the current renderer. Rank them by clipping, text overlap, data overlap and distance from the requested placement, in that order. Exclude the legend’s own children from overlap checks. Patch bounds, line intersections and collection offsets approximate data occupancy.
+1. Retain author edits and restore point-sized bases.
+2. Measure geometry and refine default typography with `draw_without_rendering()`, falling back to a canvas draw when unavailable.
+3. Select automatic legend positions and separate supported bar-value labels.
+4. Freeze layout and render the complete figure.
 
-Transform visible point collections into display coordinates once per placement search and reuse those coordinates across candidates. Count points inside each candidate with inclusive NumPy bounds checks, ignoring masked and non-finite coordinates. Retain every valid point, the existing overlap weights, candidate order and tie-breaking; do not sample points to accelerate placement. Keep this cache local to the search so later data or transform edits are re-measured.
+During measurement, automatic internal legends use a temporary upper-right position and do not reserve layout space. Restore their automatic request and layout flag on exit. Explicit locations and anchors keep their normal layout participation.
 
-During each styled figure draw, reuse native automatic legend searches only when legend dimensions, renderer, axes bounds, limits and the data-transform matrix match. Discard the cache at the end of the draw, including on failure; the next draw measures current data again. Explicit anchors and instance overrides of the native search remain untouched. Preserve native placement scoring and candidate selection rather than substituting an approximate search. Verify cached and uncached output after author edits, resizing and export.
+Evaluate the ten named internal legend locations once, ranking clipping, text overlap and data overlap, then named-location order. Exclude the legend's own children from overlap checks. Transform visible point collections once and count containment with inclusive NumPy bounds, ignoring masked and non-finite coordinates. Retain every valid point. Patch bounds, line intersections and collection offsets approximate occupancy. Finishing avoids native `best` searches, automatic rasterisation and point reduction.
 
-Cached-versus-uncached equality validates this optimisation within the same environment; it is not a permanent placement contract across dependency versions. Matplotlib remains the behavioural reference, while Hedgehogs owns its documented finishing priorities. Upstream automatic-placement changes and deliberate Hedgehogs algorithm changes may alter the selected candidate. Keep candidate order and tie-breaking deterministic, document intentional policy changes and verify the invariants in [Reference behaviour and reproducibility](presentation.md#reference-behaviour-and-reproducibility). Do not freeze an old Matplotlib result merely to retain a historical screenshot.
+Bar-value labels move outward along their bars while retaining endpoint anchors and category rows. Warn about unresolved label collisions or a legend that cannot fit inside its axes. Data overlap ranks legend candidates without generating a warning.
 
-Search only internal candidates for `loc="best"`. Named locations and anchors remain fixed. Never shrink axes to make room for an automatically external legend. Data overlap ranks candidates but does not itself generate a warning; an oversized legend can warn that an explicit anchor or larger canvas is needed.
+Unchanged repeated output retains geometry. Input changes reopen measurement and automatic selection. Data digests detect supported edits without retaining full data copies between calls; producing the digest still reads data and allocates temporary bytes. Keep caches local to their measurement stage and restore temporary state on failure.
 
-Bar-label candidates move outward along their bars, preserving endpoint anchors and category rows. The search uses a bounded set of offsets and warns about remaining label collisions. It does not change values, axis limits, or plot orientation. Golden-ratio preferences and general-purpose numerical optimisers are excluded from this stage.
-
-Solve layout before output, then freeze its geometry across renderers. Later finishing calls compare geometry and style inputs; unchanged figures retain their layout. Data digests avoid copying arrays. Changed inputs reactivate the saved engine and repeat measurement.
-
-Test repeated calls, author edits, outside legends and consistent PNG/PDF/SVG output. Extend collision handling in `presentation.py`.
+Matplotlib remains the behavioural reference; Hedgehogs owns its documented finishing priorities. See [Reference behaviour and reproducibility](presentation.md#reference-behaviour-and-reproducibility) for placement guarantees, and [Validation rules](../../tests/README.md) for regression checks.
 
 ## Specialised drawings
 
@@ -74,6 +73,8 @@ Pairplots share outer x axes by column and y axes by row. Diagonal inset axes re
 Pairplot layout measures legend dimensions, reserves its space, and settles panel sizes with typography in bounded passes. See [Presentation proportions](presentation.md) for the scale calculation. Fitting runs during construction; later artist edits remain available, while arbitrary canvas resizing does not repeat this calculation.
 
 ## Verification
+
+When built-in colours change, update the [palette table](../api/palettes.md) and regenerate previews with `python tools/docs/render_palette_swatches.py others/palettes`.
 
 Choose the smallest relevant selection using [Validation rules](../../tests/README.md). Run the full suite once when functional changes have settled or before release. The following scripts render PNG, PDF, and SVG examples into a supplied output directory.
 
@@ -90,4 +91,4 @@ python tools/render_pairplots.py /path/to/output
 
 Check package discovery and imports from a built wheel after moving modules. Run figure tests with DejaVu Serif and the local serif font because glyph metrics affect legend fitting and label margins. Test point-size scaling separately from adaptive fitting.
 
-The renderer re-measures fitted titles to account for raster hinting. Adapter types isolate dynamic Matplotlib hooks and private fields from differences between supported type stubs.
+Re-measure fitted titles with the active renderer. Keep Matplotlib private-field access inside rendering adapters.

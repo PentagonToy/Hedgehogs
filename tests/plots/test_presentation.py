@@ -164,19 +164,30 @@ def test_colliding_bar_values_move_outward_without_changing_anchors():
     assert any(label.get_position()[0] > 3 for label in labels)
 
 
-def test_data_changes_reopen_candidate_search():
+def test_data_changes_reopen_candidate_search(monkeypatch):
     from matplotlib.patches import Rectangle
+    from hedgehogs.plots import presentation
     fig, ax = plt.subplots(figsize=(6, 4))
     occupied = Rectangle((0, 0), 1, 1, label='Data')
     ax.add_patch(occupied)
     ax.set(xlim=(0, 1), ylim=(0, 1))
     legend = ax.legend(loc='best')
+    searches = []
+    original_place = presentation._place_legend
+
+    def place(*args, **kwargs):
+        searches.append(occupied.get_visible())
+        return original_place(*args, **kwargs)
+
+    monkeypatch.setattr(presentation, '_place_legend', place)
     prepare(fig)
     assert legend._bbox_to_anchor is None
     occupied.set_visible(False)
     prepare(fig)
     assert legend._bbox_to_anchor is None
-    assert legend._loc == 0
+    assert searches == [True, False]
+    assert legend._hedgehogs_finish_requested_loc == 0
+    assert _data_overlap(ax, legend.get_window_extent(fig._get_renderer()), fig._get_renderer()) == 0
 
 
 def test_per_point_opacity_is_safe_on_repeated_finishing():
@@ -538,3 +549,66 @@ def test_cached_draw_matches_uncached_after_edits_and_resize(placement, monkeypa
         outcomes.append(stages)
         plt.close(fig)
     assert np.asarray(outcomes[0]) == pytest.approx(np.asarray(outcomes[1]))
+
+
+def test_finishing_selects_auto_legend_once_without_rasterising(monkeypatch, tmp_path):
+    import numpy as np
+    from matplotlib.legend import Legend
+    from hedgehogs.plots import presentation
+    data = np.random.default_rng(17).normal(size=(500, 2))
+    fig, ax = plt.subplots(figsize=(3.5, 2.65))
+    scatter = ax.scatter(*data.T, label='Samples')
+    legend = ax.legend(loc='best')
+    searches = []
+    original_place = presentation._place_legend
+    draws = []
+    original_draw = fig.canvas.draw
+
+    def native_search(*args, **kwargs):
+        raise AssertionError('Finishing must not run native best placement.')
+
+    def place(*args, **kwargs):
+        searches.append(1)
+        return original_place(*args, **kwargs)
+
+    def draw():
+        draws.append(1)
+        return original_draw()
+
+    monkeypatch.setattr(Legend, '_find_best_position', native_search)
+    monkeypatch.setattr(presentation, '_place_legend', place)
+    monkeypatch.setattr(fig.canvas, 'draw', draw)
+    monkeypatch.setattr(plt, 'show', lambda **kwargs: None)
+    hdg.plots.show(fig, block=False)
+    assert len(searches) == len(draws) == 1
+    assert 1 <= legend._loc <= 10
+    assert legend.get_in_layout()
+    assert not scatter.get_rasterized()
+    assert np.array_equal(scatter.get_offsets(), data)
+    hdg.plots.show(fig, block=False)
+    assert len(searches) == 1 and len(draws) == 2
+    scatter.set_offsets(data * 2)
+    fig.set_size_inches(4, 3)
+    hdg.plots.show(fig, block=False)
+    assert len(searches) == 2
+    assert np.array_equal(scatter.get_offsets(), data * 2)
+    hdg.plots.save(tmp_path / 'vector', fig=fig, formats=('pdf', 'svg'), bbox_inches=None)
+    assert b'/Subtype /Image' not in (tmp_path / 'vector.pdf').read_bytes()
+    assert '<image' not in (tmp_path / 'vector.svg').read_text()
+    assert not scatter.get_rasterized()
+
+
+def test_deferred_legend_restores_flags_on_measurement_failure():
+    from hedgehogs.plots.presentation import _defer_auto_legends
+    fig, axes = plt.subplots(1, 2)
+    for ax in axes:
+        ax.plot([0, 1], label='Data')
+    automatic = axes[0].legend(loc='best')
+    explicit = axes[1].legend(loc='upper left', bbox_to_anchor=(1, 1))
+    with pytest.raises(RuntimeError):
+        with _defer_auto_legends(fig):
+            assert automatic._loc == 1 and not automatic.get_in_layout()
+            assert explicit._loc == 2 and explicit.get_in_layout()
+            raise RuntimeError('measurement failure')
+    assert automatic._loc == 0 and automatic.get_in_layout()
+    assert explicit._loc == 2 and explicit.get_in_layout()

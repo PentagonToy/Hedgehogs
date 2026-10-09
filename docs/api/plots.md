@@ -111,7 +111,7 @@ ax.legend()
 hdg.plots.show()
 ```
 
-`hdg.plots.save()` applies the same finishing step. After finishing, `fig.savefig()` retains the selected layout. Repeated finishing recalculates from current artists without cumulative resizing. Ordinary `plt.show()` retains the existing rendering policy.
+`hdg.plots.save()` applies the same finishing step. Unchanged repeated output retains its layout; edits reopen measurement without cumulative resizing. Ordinary `plt.show()` uses the ordinary styled-rendering policy. Finishing neither rasterises nor subsamples points; PDF and SVG output stays vector unless rasterisation is explicitly requested. See [Presentation rules](../developer/presentation.md#legend-fitting-and-limits) for fitting and reproducibility.
 
 ## `plots.save`
 

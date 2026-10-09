@@ -1,6 +1,6 @@
 # Hedgehogs documentation
 
-The [project README](../README.md) introduces installation and usage; notebooks in [tutorials](../tutorials) contain worked examples.
+The [documentation site](https://pentagontoy.github.io/Hedgehogs/) provides [installation](installation.md), a [first figure](quick-start.md) and a [gallery](gallery.md). The [project README](../README.md) introduces installation and usage; notebooks in [tutorials](../tutorials) contain worked examples.
 
 | Area | Purpose |
 | --- | --- |

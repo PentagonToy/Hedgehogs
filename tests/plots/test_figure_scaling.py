@@ -272,7 +272,7 @@ def test_tight_layout_measures_the_final_font_sizes():
     assert fig.bbox.contains(*ax.xaxis.label.get_window_extent().get_points()[0])
 
 
-def test_finalize_is_consistent_before_and_after_rendering():
+def test_minor_ticks_are_consistent_before_and_after_rendering():
     values = []
     for first_draw in (False, True):
         fig, ax = plt.subplots(figsize=(4.48, 4.4))
@@ -280,7 +280,7 @@ def test_finalize_is_consistent_before_and_after_rendering():
         legend = ax.legend()
         if first_draw:
             fig.canvas.draw()
-        hdg.finalize(ax, minor_ticks=True)
+        hdg.figures.enable_minor_ticks(ax)
         fig.canvas.draw()
         values.append((legend.get_frame().get_linewidth(),
                        ax.xaxis.get_minor_ticks()[0].tick1line.get_markersize()))
