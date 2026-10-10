@@ -58,7 +58,7 @@ Evaluate the ten named internal legend locations once, ranking clipping, text ov
 
 Bar-value labels move outward along their bars while retaining endpoint anchors and category rows. Warn about unresolved label collisions or a legend that cannot fit inside its axes. Data overlap ranks legend candidates without generating a warning.
 
-Unchanged repeated output retains geometry. Input changes reopen measurement and automatic selection. Data digests detect supported edits without retaining full data copies between calls; producing the digest still reads data and allocates temporary bytes. Keep caches local to their measurement stage and restore temporary state on failure.
+Unchanged repeated output retains geometry. Changing the internal legend policy re-evaluates placement without reopening axes layout. Input changes reopen measurement and automatic selection. Data digests detect supported edits without retaining full data copies between calls; producing the digest still reads data and allocates temporary bytes. Keep caches local to their measurement stage and restore temporary state on failure.
 
 Matplotlib remains the behavioural reference; Hedgehogs owns its documented finishing priorities. See [Reference behaviour and reproducibility](presentation.md#reference-behaviour-and-reproducibility) for placement guarantees, and [Validation rules](../../tests/README.md) for regression checks.
 

@@ -45,7 +45,7 @@ Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend spac
 
 Ordinary rendering targets a legend width of 60% of its axes, or 90% of the canvas for a figure legend, and a height of 40% of the container. A scaled 6 pt reference font floor takes priority over these compactness targets. Wider fallback fonts can exceed the target at that floor. Explicit external anchors bypass this fitting.
 
-`plots.show()` and `plots.save()` share finishing. They refine default typography, measure geometry, select automatic axes-legend positions and then render. Automatic legends do not reserve provisional layout space. The search ranks ten internal positions by clipping, text overlap and data overlap, using named-location order to break ties. Named locations and explicit anchors retain their placement. Oversized legends or long labels may need a larger canvas, shorter text or an external anchor.
+`plots.show()` and `plots.save()` share finishing. They refine default typography, measure geometry, select automatic axes-legend positions and then render. Automatic legends do not reserve provisional layout space. The search ranks ten named location codes (nine distinct positions) by clipping, text overlap and data overlap, using named-location order to break ties. Named locations and explicit anchors retain their placement. Oversized legends or long labels may need a larger canvas, shorter text or an external anchor.
 
 Finishing preserves plotted data and avoids automatic rasterisation or subsampling. PDF and SVG scatter output remains vector unless the author requests rasterisation. See [Figure finishing](architecture.md#figure-finishing) for implementation details.
 

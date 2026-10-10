@@ -251,18 +251,7 @@ def _defer_auto_legends(fig):
             legend.set_in_layout(in_layout)
 
 
-def prepare(fig: Figure) -> None:
-    """Finish a figure in place; repeated calls do not rescale its artists."""
-    if not isinstance(fig, Figure):
-        raise TypeError('fig must be a Matplotlib Figure.')
-    target: Any = fig
-    # Restore point-sized bases from the existing style cache. This is an
-    # explicit finishing choice; ordinary plt.show() retains legacy sizing.
-    if (getattr(target, '_hedgehogs_finish_layout_locked', False)
-            and getattr(target, '_hedgehogs_finish_signature', None) == _signature(target)):
-        target.canvas.draw()
-        if target._hedgehogs_finish_signature == _signature(target):
-            return
+def _restore_auto_legends(target: Any) -> None:
     # Revisit automatically anchored legends, while retaining author anchors.
     for ax in target.axes:
         legend = ax.get_legend()
@@ -274,6 +263,29 @@ def prepare(fig: Figure) -> None:
                 and legend._bbox_to_anchor is legend._hedgehogs_finish_anchor):
             legend.set_bbox_to_anchor(None)
             _legend_location(legend, legend._hedgehogs_finish_requested_loc)
+
+
+def prepare(fig: Figure) -> None:
+    """Finish a figure in place; repeated calls do not rescale its artists."""
+    if not isinstance(fig, Figure):
+        raise TypeError('fig must be a Matplotlib Figure.')
+    target: Any = fig
+    # Restore point-sized bases from the existing style cache. This is an
+    # explicit finishing choice; ordinary plt.show() retains legacy sizing.
+    if (getattr(target, '_hedgehogs_finish_layout_locked', False)
+            and getattr(target, '_hedgehogs_finish_signature', None) == _signature(target)):
+        target.canvas.draw()
+        if target._hedgehogs_finish_signature == _signature(target):
+            if getattr(target, '_hedgehogs_finish_policy', None) != id(_place_legend):
+                _restore_auto_legends(target)
+                renderer = target._get_renderer()
+                for ax in target.axes:
+                    _place_legend(target, ax, renderer)
+                target.canvas.draw()
+                target._hedgehogs_finish_policy = id(_place_legend)
+                target._hedgehogs_finish_signature = _signature(target)
+            return
+    _restore_auto_legends(target)
     from matplotlib.layout_engine import PlaceHolderLayoutEngine
     engine = target.get_layout_engine()
     if (isinstance(engine, PlaceHolderLayoutEngine)
@@ -315,6 +327,7 @@ def prepare(fig: Figure) -> None:
     if _bar_collisions(target, target._get_renderer()):
         warnings.warn('Bar value labels still overlap; increase the canvas or adjust their positions.',
                       UserWarning, stacklevel=2)
+    target._hedgehogs_finish_policy = id(_place_legend)
     target._hedgehogs_finish_signature = _signature(target)
 
 
