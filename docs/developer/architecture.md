@@ -39,9 +39,9 @@ Keep the dependency direction explicit: presentation modules may import `core`; 
 
 ## Rendering lifecycle
 
-`set_style()` configures `rcParams` and installs rendering hooks. Figures retain their reference size; `reset_style()` restores Matplotlib methods and defaults. Option wrappers distinguish explicit font and stroke choices from omitted defaults. Hooks must avoid duplicate installation and preserve subsequent third-party replacements.
+`set_style()` configures `rcParams` and installs rendering hooks. Figures retain their reference size; `reset_style()` restores Matplotlib methods and defaults. Option wrappers distinguish explicit font and stroke choices from omitted defaults. Hooks avoid duplicate installation and preserve subsequent third-party replacements. Retired wrappers delegate without applying Hedgehogs changes, including after style is enabled again.
 
-During ordinary styled draws, a local cache reuses native automatic legend searches with matching dimensions, renderer, axes bounds, limits and transform matrix. Remove temporary wrappers and cached results after each draw, including on failure. Explicit anchors and instance search overrides bypass the cache.
+During ordinary styled draws, a local cache reuses native automatic legend searches with matching dimensions, renderer, axes bounds, limits and transform matrix. Remove temporary wrappers and cached results after each draw, including setup and rendering failures. A temporary wrapper retained by another library delegates to native search after its draw ends. Explicit anchors and instance search overrides bypass the cache.
 
 ## Figure finishing
 

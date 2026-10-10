@@ -29,30 +29,33 @@ from matplotlib.text import Text
 def _cached_legend_search(figure):
     """Reuse identical native placement measurements within one draw only."""
     installed = []
-    for ax in figure.axes:
-        legend = ax.get_legend()
-        if (legend is None or legend._loc != 0 or legend._bbox_to_anchor is not None
-                or '_find_best_position' in legend.__dict__):
-            continue
-        original = legend._find_best_position
-        cache: dict[tuple[Any, ...], Any] = {}
-
-        def find(width, height, renderer, *args, _original=original, _ax=ax, _cache=cache, **kwargs):
-            if args or kwargs:
-                return _original(width, height, renderer, *args, **kwargs)
-            key = (width, height, id(renderer), tuple(_ax.bbox.bounds),
-                   tuple(_ax.get_xlim()), tuple(_ax.get_ylim()),
-                   tuple(_ax.transData.get_matrix().flat))
-            if key not in _cache:
-                _cache[key] = _original(width, height, renderer)
-            return _cache[key]
-
-        legend._find_best_position = find
-        installed.append((legend, find))
+    active = True
     try:
+        for ax in figure.axes:
+            legend = ax.get_legend()
+            if (legend is None or legend._loc != 0 or legend._bbox_to_anchor is not None
+                    or '_find_best_position' in legend.__dict__):
+                continue
+            original = legend._find_best_position
+            cache: dict[tuple[Any, ...], Any] = {}
+
+            def find(width, height, renderer, *args, _original=original, _ax=ax, _cache=cache, **kwargs):
+                if not active or args or kwargs:
+                    return _original(width, height, renderer, *args, **kwargs)
+                key = (width, height, id(renderer), tuple(_ax.bbox.bounds),
+                       tuple(_ax.get_xlim()), tuple(_ax.get_ylim()),
+                       tuple(_ax.transData.get_matrix().flat))
+                if key not in _cache:
+                    _cache[key] = _original(width, height, renderer)
+                return _cache[key]
+
+            legend._find_best_position = find
+            installed.append((legend, find, cache))
         yield
     finally:
-        for legend, find in installed:
+        active = False
+        for legend, find, cache in installed:
+            cache.clear()
             if legend.__dict__.get('_find_best_position') is find:
                 del legend._find_best_position
 
@@ -490,6 +493,9 @@ class _FigureStyle:
                         bounds = (handle.get_x(), handle.get_y(), handle.get_width(), handle.get_height())
                         handle.set_bounds(*self._scaled(handle, 'legend_bounds', bounds, factor))
 
+# A third-party wrapper may retain an old hook after reset_style().
+# Its installation must stay inactive when a later style is enabled.
+_hook_generation: object | None = None
 _reference_size: tuple[float, float] | None = None
 _original_init: Callable | None = None
 _original_draw: Callable | None = None
@@ -537,10 +543,12 @@ def _font_option(args: tuple[Any, ...], kwargs: dict[str, Any]) -> bool:
     return False
 
 
-def _font_method(name: str, original: Callable) -> Callable:
+def _font_method(name: str, original: Callable, generation: object) -> Callable:
     @wraps(original)
     def method(axes, *args, **kwargs):
         result = original(axes, *args, **kwargs)
+        if generation is not _hook_generation:
+            return result
         if _font_option(args, kwargs):
             if name == 'tick_params':
                 if kwargs.get('which', 'major') != 'minor':
@@ -573,7 +581,7 @@ def _font_method(name: str, original: Callable) -> Callable:
 
 def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) -> None:
     """Attach a frozen reference size to figures created after set_style()."""
-    global _reference_size, _original_init, _original_draw, _installed_init, _installed_draw
+    global _hook_generation, _reference_size, _original_init, _original_draw, _installed_init, _installed_draw
     global _original_tight_layout, _installed_tight_layout, _manage_margins
     global _original_savefig, _installed_savefig
     global _original_colorbar, _installed_colorbar
@@ -583,6 +591,7 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     _configure_inline()
     if _original_init is not None:
         return
+    generation = _hook_generation = object()
     _original_init = Figure.__init__
     _original_draw = Figure.draw
     _original_tight_layout = Figure.tight_layout
@@ -592,7 +601,7 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     for name in ('set_xlabel', 'set_ylabel', 'set_title', 'set_xticklabels',
                  'set_yticklabels', 'bar_label', 'legend', 'tick_params', 'plot', 'bar'):
         original = getattr(Axes, name)
-        installed = _font_method(name, original)
+        installed = _font_method(name, original, generation)
         _font_methods[name] = (original, installed)
         setattr(Axes, name, installed)
     original_init = _original_init
@@ -604,6 +613,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
 
     @wraps(original_scatter)
     def scatter(axes, *args, **kwargs):
+        if generation is not _hook_generation:
+            return original_scatter(axes, *args, **kwargs)
         if (_reference_size is not None and kwargs.get('edgecolors') is None
                 and 'edgecolor' not in kwargs):
             marker = kwargs.get('marker')
@@ -614,6 +625,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
             if marker_style.is_filled():
                 kwargs['edgecolors'] = 'black'
         result = original_scatter(axes, *args, **kwargs)
+        if generation is not _hook_generation:
+            return result
         if any(kwargs.get(key) is not None for key in ('linewidths', 'linewidth', 'lw')):
             setattr(result, '_hedgehogs_stroke_explicit', True)
         return result
@@ -623,11 +636,13 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     @wraps(original_init)
     def initialise(figure, *args, **kwargs):
         original_init(figure, *args, **kwargs)
-        if _reference_size is not None:
+        if generation is _hook_generation and _reference_size is not None:
             figure._hedgehogs_style = _FigureStyle(_reference_size, _manage_margins)
 
     @wraps(original_draw)
     def draw(figure, renderer):
+        if generation is not _hook_generation:
+            return original_draw(figure, renderer)
         style = getattr(figure, '_hedgehogs_style', None)
         if style is not None and _reference_size is not None:
             with _cached_legend_search(figure):
@@ -637,6 +652,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
 
     @wraps(original_tight_layout)
     def tight_layout(figure, *args, **kwargs):
+        if generation is not _hook_generation:
+            return original_tight_layout(figure, *args, **kwargs)
         style = getattr(figure, "_hedgehogs_style", None)
         if style is not None and _reference_size is not None:
             style.apply(figure)
@@ -644,6 +661,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
 
     @wraps(original_savefig)
     def savefig(figure, *args, **kwargs):
+        if generation is not _hook_generation:
+            return original_savefig(figure, *args, **kwargs)
         style = getattr(figure, "_hedgehogs_style", None)
         if style is not None and _reference_size is not None:
             # An explicit Bbox export can skip the preliminary draw. Fit the
@@ -653,6 +672,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
 
     @wraps(original_colorbar)
     def colorbar(figure, *args, **kwargs):
+        if generation is not _hook_generation:
+            return original_colorbar(figure, *args, **kwargs)
         style = getattr(figure, "_hedgehogs_style", None)
         cax = kwargs.get("cax", args[1] if len(args) > 1 else None)
         if (style is not None and style.manage_margins and _reference_size is not None
@@ -676,14 +697,17 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     _installed_init, _installed_draw = initialise, draw
     setattr(Figure, "__init__", initialise)
     setattr(Figure, "draw", draw)
+
+
 def disable() -> None:
     """Stop automatic sizing and restore Matplotlib's figure methods."""
-    global _reference_size, _original_init, _original_draw, _installed_init, _installed_draw
+    global _hook_generation, _reference_size, _original_init, _original_draw, _installed_init, _installed_draw
     global _original_tight_layout, _installed_tight_layout, _manage_margins
     global _original_savefig, _installed_savefig
     global _original_colorbar, _installed_colorbar
     global _original_scatter, _installed_scatter
     global _inline_configuration
+    _hook_generation = None
     _reference_size = None
     for name, (original, installed) in _font_methods.items():
         if getattr(Axes, name) is installed:

@@ -55,6 +55,8 @@ Store JSON reports outside the source tree with source changes and hardware deta
 
 Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Run font-sensitive cases with the configured serif family and DejaVu Serif. Ordinary legend fitting may exceed its 60% width target at the scaled 6 pt font floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
 
+Cross-dataset checks hold canvas size, limits, ticks, labels, fonts and layout configuration fixed while changing line/scatter data. Compare axes bounds after finishing, data edits and export; automatic legend positions may differ. Hook checks cover repeated style cycles, third-party replacements and failure cleanup.
+
 Same-environment repeatability does not require identical automatic placement across versions or with native Matplotlib. Compare cached and uncached paths when validating a result-preserving optimisation. Inspect upstream layout changes against the behavioural criteria before updating expectations; see [Reference behaviour and reproducibility](../docs/developer/presentation.md#reference-behaviour-and-reproducibility).
 
 Distinguish non-interactive rendering checks from native GUI checks. Measure test costs before optimising a slow case; retain its behavioural coverage. Keep timings and experiment results in execution reports.
