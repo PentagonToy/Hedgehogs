@@ -339,7 +339,7 @@ class _FigureStyle:
             # Use Matplotlib's label-aware layout instead of shrinking the axes
             # and typography repeatedly by an estimated colourbar allowance.
             properties.setdefault("layout_base", current)
-            bottom, top = 0.0, 1.0
+            left, bottom, right, top = 0.0, 0.0, 1.0, 1.0
             for legend in figure.legends:
                 if not legend.get_visible() or not legend.get_in_layout():
                     continue
@@ -348,7 +348,11 @@ class _FigureStyle:
                     bottom = max(bottom, (bounds.y1 + margin) / figure.bbox.height)
                 elif bounds.y0 >= figure.bbox.height * 0.75:
                     top = min(top, (bounds.y0 - margin) / figure.bbox.height)
-            layout = TightLayoutEngine(pad=0.6, rect=(0, bottom, 1, top))
+                elif bounds.x1 <= figure.bbox.width * 0.25:
+                    left = max(left, (bounds.x1 + margin) / figure.bbox.width)
+                elif bounds.x0 >= figure.bbox.width * 0.75:
+                    right = min(right, (bounds.x0 - margin) / figure.bbox.width)
+            layout = TightLayoutEngine(pad=0.6, rect=(left, bottom, right, top))
             # Box-aspect and colourbar locators can leave label positions stale
             # after the first layout pass. Re-measure before the final render.
             for _ in range(3):
@@ -599,7 +603,7 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     _original_scatter = Axes.scatter
     _original_colorbar = Figure.colorbar
     for name in ('set_xlabel', 'set_ylabel', 'set_title', 'set_xticklabels',
-                 'set_yticklabels', 'bar_label', 'legend', 'tick_params', 'plot', 'bar'):
+                 'set_yticklabels', 'bar_label', 'legend', 'tick_params', 'plot', 'bar', 'text'):
         original = getattr(Axes, name)
         installed = _font_method(name, original, generation)
         _font_methods[name] = (original, installed)
@@ -638,6 +642,8 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
         original_init(figure, *args, **kwargs)
         if generation is _hook_generation and _reference_size is not None:
             figure._hedgehogs_style = _FigureStyle(_reference_size, _manage_margins)
+            if not args and kwargs.get('figsize') is None:
+                figure._hedgehogs_default_canvas = tuple(figure.get_size_inches())
 
     @wraps(original_draw)
     def draw(figure, renderer):

@@ -1,6 +1,5 @@
 """Run the existing synthetic plots notebook in isolated output directories."""
 from pathlib import Path
-from contextlib import nullcontext
 import json
 import os
 import sys
@@ -26,7 +25,7 @@ try:
         directory.mkdir(parents=True, exist_ok=True)
         os.chdir(directory)
         namespace = {}
-        with legend_grid.experimental_placement() if mode == 'hybrid' else nullcontext():
+        with legend_grid.experimental_placement() if mode == 'hybrid' else legend_grid.experimental_placement(legend_grid.FIXED):
             for index, cell in enumerate(notebook['cells']):
                 if cell['cell_type'] == 'code':
                     exec(compile(''.join(cell['source']), f'plots.ipynb:cell{index}', 'exec'), namespace)

@@ -9,6 +9,7 @@ from matplotlib.transforms import Bbox
 import hedgehogs as hdg
 from hedgehogs.plots import presentation
 from tools.experiments import legend_grid
+from hedgehogs.plots import _legend as algorithm
 
 
 @pytest.fixture(autouse=True)
@@ -87,7 +88,7 @@ def test_hybrid_zero_overlap_skips_grid(monkeypatch):
     legend = ax.legend(loc='best')
     def unexpected(*args, **kwargs):
         raise AssertionError('grid should not run')
-    monkeypatch.setattr(legend_grid, 'propose', unexpected)
+    monkeypatch.setattr(algorithm, 'propose', unexpected)
     legend_grid.hybrid(fig, ax, fig.canvas.get_renderer())
     assert legend._loc == 1
 
@@ -101,7 +102,7 @@ def test_hybrid_keeps_classic_on_equal_or_worse_audit(monkeypatch, proposal_cost
     def overlap(ax, box, renderer, offsets=None):
         return presentation._area(box) * (proposal_cost if isinstance(legend._loc, tuple) else 1)
     monkeypatch.setattr(presentation, '_data_overlap', overlap)
-    monkeypatch.setattr(legend_grid, 'propose', lambda *args, **kwargs: (.4, .4))
+    monkeypatch.setattr(algorithm, 'propose', lambda *args, **kwargs: (.4, .4))
     legend_grid.hybrid(fig, ax, fig.canvas.get_renderer())
     assert legend._loc == 1
 
@@ -113,14 +114,16 @@ def test_policy_switch_revisits_already_finished_figure():
     ax.scatter(*points[keep].T, s=4, label='Samples')
     ax.set(xlim=(0, 1), ylim=(0, 1))
     legend = ax.legend(loc='best')
-    presentation.prepare(fig)
+    with legend_grid.experimental_placement(legend_grid.FIXED):
+        presentation.prepare(fig)
     original = legend._loc
     bounds = ax.get_position().bounds
     with legend_grid.experimental_placement():
         presentation.prepare(fig)
         assert isinstance(legend._loc, tuple)
         assert ax.get_position().bounds == pytest.approx(bounds)
-    presentation.prepare(fig)
+    with legend_grid.experimental_placement(legend_grid.FIXED):
+        presentation.prepare(fig)
     assert legend._loc == original
     assert ax.get_position().bounds == pytest.approx(bounds)
 
@@ -134,6 +137,31 @@ def test_hybrid_requires_meaningful_data_improvement(monkeypatch, proposal_cost,
     def overlap(ax, box, renderer, offsets=None):
         return presentation._area(box) * (proposal_cost if isinstance(legend._loc, tuple) else 1)
     monkeypatch.setattr(presentation, '_data_overlap', overlap)
-    monkeypatch.setattr(legend_grid, 'propose', lambda *args, **kwargs: (.4, .4))
+    monkeypatch.setattr(algorithm, 'propose', lambda *args, **kwargs: (.4, .4))
     legend_grid.hybrid(fig, ax, fig.canvas.get_renderer())
     assert isinstance(legend._loc, tuple) == accepted
+
+
+def test_default_finishing_uses_audited_free_position(monkeypatch):
+    monkeypatch.setattr(plt, 'show', lambda **kwargs: None)
+    fig, ax = plt.subplots(figsize=(4.76, 3.4))
+    points = np.random.default_rng(17).uniform(0, 1, (6000, 2))
+    keep = ~((points[:, 0] > .12) & (points[:, 0] < .67)
+             & (points[:, 1] > .19) & (points[:, 1] < .48))
+    scatter = ax.scatter(*points[keep].T, s=4, label='Samples')
+    ax.set(xlim=(0, 1), ylim=(0, 1))
+    legend = ax.legend(loc='best')
+    hdg.plots.show(fig)
+    assert isinstance(legend._loc, tuple)
+    position = legend._loc
+    bounds = ax.get_position().bounds
+    hdg.plots.show(fig)
+    assert legend._loc == position
+    assert ax.get_position().bounds == pytest.approx(bounds)
+    np.testing.assert_array_equal(scatter.get_offsets(), points[keep])
+
+
+def test_clearance_uses_bounded_neighbourhood_erosion():
+    assert np.array_equal(algorithm.clearance(np.ones((3, 3), dtype=bool)),
+                          [[1, 1, 1], [1, 2, 1], [1, 1, 1]])
+    assert np.array_equal(algorithm.clearance(np.zeros((3, 3), dtype=bool)), np.zeros((3, 3)))

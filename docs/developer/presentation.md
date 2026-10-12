@@ -45,7 +45,7 @@ Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend spac
 
 Ordinary rendering targets a legend width of 60% of its axes, or 90% of the canvas for a figure legend, and a height of 40% of the container. A scaled 6 pt reference font floor takes priority over these compactness targets. Wider fallback fonts can exceed the target at that floor. Explicit external anchors bypass this fitting.
 
-`plots.show()` and `plots.save()` share finishing. They refine default typography, measure geometry, select automatic axes-legend positions and then render. Automatic legends do not reserve provisional layout space. The search ranks ten named location codes (nine distinct positions) by clipping, text overlap and data overlap, using named-location order to break ties. Named locations and explicit anchors retain their placement. Oversized legends or long labels may need a larger canvas, shorter text or an external anchor.
+`plots.show()` and `plots.save()` share finishing. They refine default typography, measure geometry, select automatic axes-legend positions and then render. Automatic legends do not reserve provisional layout space. The search ranks ten named location codes (nine distinct positions) by clipping, text overlap and data overlap, using named-location order to break ties. A zero-score conventional position terminates the search. Otherwise an occupancy grid proposes a free position for supported line/scatter figures, which is accepted only after the same overlap audit improves; a data-only change requires at least 10% relative improvement. Ties and unsupported proposals retain the conventional result. See [Legend placement mathematics](legend-experiment.md). Named locations and explicit anchors retain their placement. Oversized legends or long labels may need a larger canvas, shorter text or an external anchor.
 
 Finishing preserves plotted data and avoids automatic rasterisation or subsampling. PDF and SVG scatter output remains vector unless the author requests rasterisation. See [Figure finishing](architecture.md#figure-finishing) for implementation details.
 
@@ -74,3 +74,13 @@ Inspect the figure at its intended physical width and follow the target journal'
 ## Verification
 
 Check dimensions, readability, containment, explicit overrides and repeated output using both the configured serif font and DejaVu Serif. Test ordinary drawing separately from finishing and export. Compare figures at equal physical panel sizes. See [Validation rules](../../tests/README.md) for test selection.
+
+## Default canvas fitting
+
+Finishing may expand an untouched implicit canvas for a single horizontal bar plot with six or more categories. The minimum width is 4.76 inches; minimum height is `min(12, 0.26 * categories + 1)` inches. Explicit construction sizes and later resizing retain ownership. SHAP's explicitly resized canvas also remains unchanged. This exception provides space for dense category labels without changing data or axis limits; ordinary numeric figures retain their canvas geometry.
+
+Default raw horizontal bar endpoint values longer than ten characters use four significant digits. This applies only to plain data-coordinate text matching the unformatted bar width and row; formatted strings and explicit fonts retain ownership. The plotted values are unchanged.
+
+Implicit single-panel categorical image/heatmap plots and plots whose axis titles exceed 90% of the corresponding canvas dimension use at least 4.76 × 4.12 inches. Attached colourbars do not count as separate data panels. Numeric matrix ticks alone do not enlarge the canvas. Image/mesh and long-label panels use the bounded dense typography scale, preventing extra space from proportionally enlarging text back into a collision. External grids and explicitly sized canvases retain geometry.
+
+Figure legends clearly placed along the left or right edge reserve a side strip during managed grid layout, matching the existing top/bottom reservation. This prevents native external grid legends from covering the last panel; legend locations remain unchanged.

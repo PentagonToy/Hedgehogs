@@ -18,6 +18,7 @@ from matplotlib.collections import LineCollection, QuadMesh
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
 from matplotlib.text import Annotation, Text
+from matplotlib.ticker import FixedLocator, ScalarFormatter
 from matplotlib.transforms import Bbox
 
 
@@ -84,7 +85,7 @@ def _data_overlap(ax: Any, box: Any, renderer: Any, offsets: dict | None = None)
     return score
 
 
-def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
+def _place_legend_classic(fig: Any, ax: Any, renderer: Any) -> None:
     legend = ax.get_legend()
     if (legend is None or not legend.get_visible() or legend._bbox_to_anchor is not None
             or legend._loc != 0):
@@ -116,6 +117,11 @@ def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
     if best_score is not None and best_score[0] > 1e-6:
         warnings.warn('Legend does not fit inside the axes; choose an explicit external anchor or a larger canvas.',
                       UserWarning, stacklevel=3)
+
+
+def _place_legend(fig: Any, ax: Any, renderer: Any) -> None:
+    from ._legend import hybrid
+    hybrid(fig, ax, renderer)
 
 
 def _bar_annotations(ax: Any) -> list[Any]:
@@ -265,6 +271,66 @@ def _restore_auto_legends(target: Any) -> None:
             _legend_location(legend, legend._hedgehogs_finish_requested_loc)
 
 
+def _fit_default_category_canvas(fig: Any) -> None:
+    """Give categorical bars and matrices room on an untouched default canvas."""
+    original = getattr(fig, '_hedgehogs_default_canvas', None)
+    axes = [ax for ax in fig.axes if not hasattr(ax, '_colorbar')]
+    if original is None or tuple(fig.get_size_inches()) != original or len(axes) != 1:
+        return
+    ax = axes[0]
+    renderer = fig._get_renderer()
+    long_labels = (ax.xaxis.label.get_window_extent(renderer).width > .9 * fig.bbox.width
+                   or ax.yaxis.label.get_window_extent(renderer).height > .9 * fig.bbox.height)
+    if long_labels:
+        ax._hedgehogs_dense_labels = True
+        fig.set_size_inches(max(original[0], 4.76), max(original[1], 4.12))
+    bars = [container for container in ax.containers
+            if isinstance(container, BarContainer) and container.orientation == 'horizontal']
+    count = max((len(container.patches) for container in bars), default=0)
+    if count >= 6:
+        width, height = fig.get_size_inches()
+        fig.set_size_inches(max(width, 4.76), max(height, min(12., .26 * count + 1.)))
+    elif ax.images or any(isinstance(item, QuadMesh) for item in ax.collections):
+        def categorical(axis):
+            if (not isinstance(axis.get_major_locator(), FixedLocator)
+                    or isinstance(axis.get_major_formatter(), ScalarFormatter)):
+                return False
+            labels = [text.get_text() for text in axis.get_ticklabels()
+                      if text.get_visible() and text.get_text()]
+            if len(labels) < 2:
+                return False
+            try:
+                for label in labels:
+                    float(label.replace('\N{MINUS SIGN}', '-'))
+                return False
+            except ValueError:
+                return True
+        if categorical(ax.xaxis) or categorical(ax.yaxis):
+            fig.set_size_inches(max(original[0], 4.76), max(original[1], 4.12))
+
+
+def _compact_bar_values(fig: Any) -> None:
+    """Compact raw float endpoint labels, leaving formatted strings untouched."""
+    for ax in fig.axes:
+        for container in ax.containers:
+            if not isinstance(container, BarContainer) or container.orientation != 'horizontal':
+                continue
+            for patch in container.patches:
+                value = patch.get_width()
+                row = patch.get_y() + patch.get_height() / 2
+                for text in ax.texts:
+                    state = getattr(fig, '_hedgehogs_style', None)
+                    properties = state.values.get(text, {}) if state is not None else {}
+                    size = properties.get('fontsize', ((text.get_fontsize(),),))[0][0]
+                    if (type(text) is Text and text.get_transform() is ax.transData
+                            and not getattr(text, '_hedgehogs_font_explicit', False)
+                            and abs(size - plt.rcParams['font.size']) < 1e-9
+                            and text.get_text() == str(value) and len(text.get_text()) > 10
+                            and abs(text.get_position()[1] - row) < 1e-9
+                            and text.get_position()[0] >= patch.get_x() + value):
+                        text.set_text(format(value, '.4g'))
+
+
 def prepare(fig: Figure) -> None:
     """Finish a figure in place; repeated calls do not rescale its artists."""
     if not isinstance(fig, Figure):
@@ -286,6 +352,8 @@ def prepare(fig: Figure) -> None:
                 target._hedgehogs_finish_signature = _signature(target)
             return
     _restore_auto_legends(target)
+    _fit_default_category_canvas(target)
+    _compact_bar_values(target)
     from matplotlib.layout_engine import PlaceHolderLayoutEngine
     engine = target.get_layout_engine()
     if (isinstance(engine, PlaceHolderLayoutEngine)

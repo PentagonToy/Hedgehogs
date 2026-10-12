@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Use audited hybrid placement for automatic legends in `plots.show()` and `plots.save()`. Keep conventional locations when they have no overlap or a free-position proposal does not improve the score. Data-only changes require at least 10% relative improvement. Explicit locations and anchors remain fixed; plotted data is neither sampled nor automatically rasterised.
+
+Verify representative Seaborn, scikit-learn, pandas and statsmodels plots through `plots.show()`. Give implicit categorical matrices and long axis titles space, and reserve side strips for figure legends. Preserve external canvas choices, explicit sizes and numerical content.
+
+Improve external importance plots by expanding untouched default canvases for dense horizontal categories and compacting long raw endpoint values. Preserve explicit canvas sizes, formatted labels and font choices. Document SHAP's `show=False` finishing sequence and the separate HTML renderer.
+
+Stabilise rendering-hook lifetimes and temporary caches across reset, third-party wrappers and failed draws. Verify axes consistency across equivalent presentation requirements, repeated finishing and edits.
+
 Move panel, colour-bar, grid and minor-tick helpers to `hdg.figures`. Remove the former top-level aliases, `subplots`, `journal_preset`, `set_journal_style` and `finalize`. Create axes with `plt.subplots()`, configure styles with `set_style(figure_size=figsize(...))`, and finish figures with `plots.show()` or `plots.save()`. Custom tick formatting remains with Matplotlib.
 
 ## 0.0.1 — 8 October 2026

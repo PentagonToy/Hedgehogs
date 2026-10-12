@@ -4,7 +4,7 @@ import pytest
 import matplotlib.pyplot as plt
 import hedgehogs as hdg
 from hedgehogs.plots import presentation
-from tools.experiments.legend_grid import experimental_placement
+from tools.experiments.legend_grid import experimental_placement, FIXED
 
 
 @pytest.fixture(autouse=True)
@@ -41,7 +41,8 @@ def test_hybrid_panel_exports_preserve_geometry_and_data(tmp_path, layout, colou
                 presentation.prepare(fig)
                 assert np.allclose(first, [axis.get_position().bounds for axis in fig.axes], atol=1e-9, rtol=0)
         else:
-            hdg.plots.save(tmp_path / ('classic.' + format), fig=fig, bbox_inches=None)
+            with experimental_placement(FIXED):
+                hdg.plots.save(tmp_path / ('classic.' + format), fig=fig, bbox_inches=None)
         positions.append(np.array([axis.get_position().bounds for axis in fig.axes]))
         for artist in points:
             assert np.array_equal(artist.get_offsets(), data)

@@ -1,6 +1,6 @@
 # Legend placement experiment
 
-`legend_grid.py` is a development-only policy. It does not change Hedgehogs defaults or add an ML dependency.
+`legend_grid.py` reuses the packaged default hybrid and exposes classic/grid-only comparisons for development. No ML dependency is required.
 
 The policy aggregates every finite visible scatter point into an integer occupancy grid, traces short line segments, and evaluates legend-sized windows with summed-area tables. Text overlap takes priority over data overlap. Ties favour edge alignment; enclosed free regions prefer clearance from occupied positions. The grid is used for placement only: plot coordinates and vector output remain intact.
 
@@ -36,4 +36,4 @@ with experimental_placement():
     hdg.plots.show(fig)
 ```
 
-The context temporarily selects the experimental policy and restores the original on exit. It is intended for local experiments, not concurrent rendering or a supported public API.
+The context temporarily selects a comparison policy and restores the original on exit. It is intended for local experiments, not concurrent rendering or a supported public API.

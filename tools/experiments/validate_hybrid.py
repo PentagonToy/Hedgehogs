@@ -1,4 +1,4 @@
-"""Explicit coverage and timing audit for the development-only hybrid policy."""
+"""Explicit coverage and timing audit for the default hybrid policy."""
 import argparse
 from pathlib import Path
 import json
@@ -123,7 +123,6 @@ def validate(output):
                 plt.close(fig)
                 hdg.reset_style()
     pipeline = []
-    from contextlib import nullcontext
     original_show = plt.show
     plt.show = lambda **kwargs: None
     try:
@@ -134,7 +133,7 @@ def validate(output):
                     for repeat in range(3):
                         fig, ax = create(kind, 11, (4.76, 3.4), 'Times New Roman', count)
                         try:
-                            context = legend_grid.experimental_placement() if mode == 'hybrid' else nullcontext()
+                            context = legend_grid.experimental_placement() if mode == 'hybrid' else legend_grid.experimental_placement(legend_grid.FIXED)
                             with context:
                                 start = perf_counter()
                                 hdg.plots.show(fig, block=False)

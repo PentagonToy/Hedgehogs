@@ -551,16 +551,19 @@ def test_cached_draw_matches_uncached_after_edits_and_resize(placement, monkeypa
     assert np.asarray(outcomes[0]) == pytest.approx(np.asarray(outcomes[1]))
 
 
-def test_finishing_selects_auto_legend_once_without_rasterising(monkeypatch, tmp_path):
+@pytest.mark.parametrize('policy', ['classic', 'grid', 'hybrid'])
+def test_finishing_selects_auto_legend_once_without_rasterising(monkeypatch, tmp_path, policy):
     import numpy as np
     from matplotlib.legend import Legend
     from hedgehogs.plots import presentation
+    from hedgehogs.plots import _legend
     data = np.random.default_rng(17).normal(size=(500, 2))
     fig, ax = plt.subplots(figsize=(3.5, 2.65))
     scatter = ax.scatter(*data.T, label='Samples')
     legend = ax.legend(loc='best')
     searches = []
-    original_place = presentation._place_legend
+    original_place = {'classic': _legend.FIXED, 'grid': _legend.place,
+                      'hybrid': presentation._place_legend}[policy]
     draws = []
     original_draw = fig.canvas.draw
 
@@ -581,7 +584,19 @@ def test_finishing_selects_auto_legend_once_without_rasterising(monkeypatch, tmp
     monkeypatch.setattr(plt, 'show', lambda **kwargs: None)
     hdg.plots.show(fig, block=False)
     assert len(searches) == len(draws) == 1
-    assert 1 <= legend._loc <= 10
+    if isinstance(legend._loc, tuple):
+        assert len(legend._loc) == 2
+        assert np.isfinite(legend._loc).all()
+        assert all(0 <= value <= 1 for value in legend._loc)
+    else:
+        assert 1 <= legend._loc <= 10
+    if policy == 'grid':
+        assert isinstance(legend._loc, tuple)
+    elif policy == 'classic':
+        assert not isinstance(legend._loc, tuple)
+    box = legend.get_window_extent(fig._get_renderer())
+    assert box.x0 >= ax.bbox.x0 - 1 and box.y0 >= ax.bbox.y0 - 1
+    assert box.x1 <= ax.bbox.x1 + 1 and box.y1 <= ax.bbox.y1 + 1
     assert legend.get_in_layout()
     assert not scatter.get_rasterized()
     assert np.array_equal(scatter.get_offsets(), data)

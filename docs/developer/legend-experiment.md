@@ -1,6 +1,6 @@
 # Free-space legend design
 
-The local `dev` experiment proposes legend positions between the standard named locations. It does not change the default policy. See [experiment usage](../../tools/experiments/README.md) for the comparison script and temporary finishing context.
+The default finishing policy can propose legend positions between the standard named locations. See [experiment usage](../../tools/experiments/README.md) for the comparison script and temporary finishing context.
 
 ## Spatial cost
 
@@ -55,9 +55,9 @@ The final lexicographic key is $(T,D,-K,E,-r,-c)$, where $K$ is erosion depth, o
 
 ## Limits and integration
 
-The prototype supports ordinary axes, scatter and short line paths. Complex artists, long paths and windows that do not fit use the existing selector. Quantisation, text-box unions and marker footprints make the grid a proxy for exact visual overlap; subjective presentation quality requires inspection.
+The occupancy proposal supports ordinary axes, scatter and short line paths. Complex artists, long paths and windows that do not fit use the existing selector. Quantisation, text-box unions and marker footprints make the grid a proxy for exact visual overlap; subjective presentation quality requires inspection.
 
-The experimental hybrid first evaluates conventional locations in their existing order and stops on a zero clipping/text/data score. Otherwise it audits the grid proposal using the same exact scorer as the classic policy. Ties retain the conventional location, with relative tolerance $10^{-10}$ and absolute tolerance $10^{-12}$ for floating-point comparisons.
+The default hybrid first evaluates conventional locations in their existing order and stops on a zero clipping/text/data score. Otherwise it audits the grid proposal using the same exact scorer as the classic policy. Ties retain the conventional location, with relative tolerance $10^{-10}$ and absolute tolerance $10^{-12}$ for floating-point comparisons.
 
 For a data-only improvement, acceptance also requires
 
@@ -68,4 +68,4 @@ $$
 
 This threshold is a conservative presentation preference, not a mathematical constant. Clipping and text retain their higher lexicographic priority. Sensitivity checks compare $\delta=0$, $0.10$ and $0.25$.
 
-Changing placement policy on an already finished figure re-evaluates legend placement without recalculating axes geometry. The experimental context restores the normal policy on exit; subsequent finishing revisits placement as needed. The hybrid remains local to `dev` and is not enabled by default.
+Changing placement policy on an already finished figure re-evaluates legend placement without recalculating axes geometry. The experimental context restores the normal policy on exit; subsequent finishing revisits placement as needed. The hybrid is the default for `plots.show()` and `plots.save()`; development contexts can temporarily select the classic or grid-only policy.

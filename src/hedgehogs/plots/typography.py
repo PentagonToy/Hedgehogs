@@ -41,6 +41,7 @@ def refine_presentation(figure, state, annotations) -> None:
     from matplotlib.category import StrCategoryLocator
     from matplotlib.font_manager import FontProperties
     from matplotlib.lines import Line2D
+    from matplotlib.collections import QuadMesh
 
     axes = [ax for ax in figure.axes
             if getattr(ax, 'get_subplotspec', lambda: None)() is not None
@@ -109,7 +110,9 @@ def refine_presentation(figure, state, annotations) -> None:
         properties = state.values.setdefault(ax, {})
         value_labels = annotations(ax)
         legend = ax.get_legend()
-        dense = (len(value_labels) >= 6
+        dense = (getattr(ax, '_hedgehogs_dense_labels', False)
+                 or bool(ax.images) or any(isinstance(item, QuadMesh) for item in ax.collections)
+                 or len(value_labels) >= 6
                  or (legend is not None and len(legend.get_texts()) > 4)
                  or any(isinstance(axis.get_major_locator(), (FixedLocator, StrCategoryLocator))
                         and len(axis.get_major_ticks()) > 4 for axis in (ax.xaxis, ax.yaxis)))

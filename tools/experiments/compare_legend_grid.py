@@ -1,6 +1,5 @@
 """Explicit, local experiment; writes measurements and vector comparisons."""
 import argparse
-from contextlib import nullcontext
 import json
 from pathlib import Path
 import platform
@@ -104,7 +103,7 @@ def run(output, counts):
         original = plt.show
         plt.show = lambda **kwargs: None
         try:
-            with legend_grid.experimental_placement() if mode == 'grid' else nullcontext():
+            with legend_grid.experimental_placement() if mode == 'grid' else legend_grid.experimental_placement(legend_grid.FIXED):
                 start = perf_counter()
                 hdg.plots.show(fig, block=False)
                 elapsed = perf_counter() - start
