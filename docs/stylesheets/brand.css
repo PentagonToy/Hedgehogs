@@ -17,8 +17,7 @@
 
 .md-header__button.md-logo img {
   padding: 2px;
-  background: white;
-  border-radius: 3px;
+  background: transparent;
 }
 
 .md-typeset {

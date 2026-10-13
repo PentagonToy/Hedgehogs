@@ -1,5 +1,5 @@
 <div class="hedgehogs-logo">
-  <img src="../others/assets/icon.svg" alt="Hedgehogs logo and wordmark" width="210">
+  <img src="../others/assets/icon.svg" alt="Hedgehogs symbol" width="210">
 </div>
 
 # Scientific figures and reports

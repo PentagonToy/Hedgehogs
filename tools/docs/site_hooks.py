@@ -19,6 +19,13 @@ ROUTES = {}
 SOURCES = {}
 
 
+def on_config(config):
+    revision = hashlib.sha256((ROOT / 'others/assets/icon.svg').read_bytes()).hexdigest()[:12]
+    for key in ('logo', 'favicon'):
+        config.theme[key] = 'assets/artwork/assets/icon.svg?revision=' + revision
+    return config
+
+
 def on_files(files, config):
     ROUTES.clear()
     SOURCES.clear()

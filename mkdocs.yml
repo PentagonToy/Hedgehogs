@@ -9,8 +9,8 @@ hooks:
   - tools/docs/site_hooks.py
 theme:
   name: material
-  logo: assets/artwork/assets/icon-symbol.svg
-  favicon: assets/artwork/assets/icon-symbol.svg
+  logo: assets/artwork/assets/icon.svg
+  favicon: assets/artwork/assets/icon.svg
   font: false
   palette:
     - scheme: slate

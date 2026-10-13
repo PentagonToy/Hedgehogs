@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/PentagonToy/Hedgehogs/blob/main/others/assets/icon.svg">
-    <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/icon.svg?revision=06f2afbe7a60" alt="Hedgehogs logo and wordmark, with blue accents" width="270">
+    <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/icon.svg?revision=68a312775cf1" alt="Hedgehogs symbol with blue accents" width="270">
   </a>
 </p>
 

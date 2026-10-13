@@ -6,7 +6,7 @@ The independent [Hedgehogs site](https://pentagontoy.github.io/Hedgehogs/) publi
 
 Edit the original documents under `docs/`. The site hook maps `home.md` to the homepage, preserves the repository documentation index as `overview.md`, and serves the existing SVG artwork locally. SVG links include a content revision so artwork changes invalidate cached previews. Source and notebook links point to GitHub. The [Sources page](https://pentagontoy.github.io/Hedgehogs/versions/) records the build commit.
 
-`others/assets/icon.svg` contains the full logo and wordmark; `icon-symbol.svg` contains the symbol for the header and favicon. Update both after artwork changes and check light and dark backgrounds.
+`others/assets/icon.svg` is the canonical transparent symbol used by the README, homepage, header and favicon. Keep compact padding and check light and dark backgrounds after artwork changes. Header and favicon URLs are versioned automatically by content hash; update the README image revision when replacing the SVG.
 
 ## Build and publish
 
