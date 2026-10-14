@@ -11,9 +11,9 @@ python -m build /path/to/source-copy --outdir /path/to/release/dist
 python -m twine check --strict /path/to/release/dist/*
 ```
 
-Inspect both the wheel and source archive. The wheel contains the package and `py.typed`; the source archive also includes documentation, tests, tutorials and rendering tools. Install the wheel outside the source checkout and verify its version, public imports and figure export. Build a wheel from the source archive to verify that it is self-contained.
+Verify the wheel contains the package and `py.typed`. The source archive also contains docs, tests, tutorials and rendering tools. Check imports and figure export from an installed wheel outside the checkout, then build a wheel from the source archive.
 
-The GitHub Tests workflow runs Python 3.10, 3.12 and 3.13 tests, then builds and checks distribution files. Markdown-only pushes skip runtime CI; dispatch the workflow manually before release when those are the only changes. Its `hedgehogs-distributions` artefact retains the release candidates. A successful local run alone does not establish that the remote workflow passed.
+The Tests workflow checks Python 3.10, 3.12 and 3.13 and distribution files. Its `hedgehogs-distributions` artefact retains release candidates. Markdown-only pushes skip runtime CI; request a manual run before release if needed.
 
 ## Publish
 
@@ -25,6 +25,6 @@ After approving the tested files, upload them through an authenticated environme
 python -m twine upload /path/to/release/dist/*
 ```
 
-PyPI can also authenticate a dedicated GitHub publication workflow through [Trusted Publishing](https://docs.pypi.org/trusted-publishers/). Configure that workflow and its PyPI publisher together before enabling automatic uploads. [PyPA packaging guidance](https://packaging.python.org/en/latest/tutorials/packaging-projects/) describes building and uploading distributions.
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/) supports a dedicated GitHub upload workflow. Configure both the workflow and PyPI publisher before enabling uploads.
 
 After publication, verify the installed version from PyPI, create the matching `v<version>` Git tag and GitHub release, and update the README installation instructions. Preserve published release tags and version files.

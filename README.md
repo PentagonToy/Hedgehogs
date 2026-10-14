@@ -2,7 +2,7 @@
 
 <p align="center">
   <a href="https://github.com/PentagonToy/Hedgehogs/blob/main/others/assets/icon.svg">
-    <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/icon.svg?revision=68a312775cf1" alt="Hedgehogs symbol with blue accents" width="270">
+    <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/icon.svg?revision=e1685b8d6c95" alt="Hedgehogs symbol with blue accents" width="270">
   </a>
 </p>
 
@@ -98,8 +98,6 @@ Terminal output includes colour where supported. Redirected output remains plain
 
 ## Documentation and tutorials
 
-Read the [documentation site](https://pentagontoy.github.io/Hedgehogs/) for installation, first use, a gallery and API references.
-
-Use the [documentation roadmap](https://github.com/PentagonToy/Hedgehogs/blob/main/docs/README.md) for guides, API references and developer documentation. Runnable tutorials cover [plots](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/plots.ipynb), [tables](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/tables.ipynb), and [CLI output](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/cli.ipynb).
+Read the [documentation site](https://pentagontoy.github.io/Hedgehogs/) for guides and API references, or the [repository roadmap](https://github.com/PentagonToy/Hedgehogs/blob/main/docs/README.md) for developer documentation. Runnable tutorials cover [plots](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/plots.ipynb), [tables](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/tables.ipynb), and [CLI output](https://github.com/PentagonToy/Hedgehogs/blob/main/tutorials/cli.ipynb).
 
 Existing Onsaemiro code can replace its import with `import hedgehogs as hdg`. Wrap iterable work with `hdg.Progress(iterable, ...)` and use the standard `time.sleep()` for delays.

@@ -2,6 +2,7 @@
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+from typing import Any
 
 
 def _to_axes_list(ax):
@@ -12,6 +13,18 @@ def _to_axes_list(ax):
     if hasattr(ax, "__iter__") and not hasattr(ax, "plot"):
         return list(ax)
     return [ax]
+
+
+def square(enabled: bool = True, *, ax: Any = None) -> None:
+    """Fit a square plotting box inside the axes' allocated layout space.
+
+    Select the current axes by default, or pass axes/a grid through ax.
+    False releases the box constraint. Native data-aspect settings remain.
+    """
+    if not isinstance(enabled, bool):
+        raise TypeError('enabled must be True or False.')
+    for axes in _to_axes_list(ax):
+        axes.set_box_aspect(1 if enabled else None)
 
 
 def apply_grid(ax=None, axis="both"):
@@ -72,7 +85,7 @@ def annotate_panels(axes, labels=None, loc="upper left",
                fontsize=fontsize, fontweight=fontweight, va="top", ha=ha)
 
 
-__all__ = ["annotate_panels", "style_colorbar", "apply_grid", "enable_minor_ticks"]
+__all__ = ["annotate_panels", "style_colorbar", "apply_grid", "enable_minor_ticks", "square"]
 
 
 def __dir__() -> list[str]:

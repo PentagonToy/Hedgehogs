@@ -20,6 +20,6 @@ Hedgehogs prepares Matplotlib figures and presents tables, progress and status m
 
 ## Presentation behaviour
 
-Matplotlib remains the reference for artist behaviour. Hedgehogs adjusts supported layout and legend placement while retaining editable Matplotlib objects. Fonts, backends, figure dimensions and library versions can affect the result; identical placement across different environments is not guaranteed. Finishing preserves vector output unless rasterisation is explicitly requested. See the [presentation rules](developer/presentation.md#legend-fitting-and-limits) for the contract and limits.
+Hedgehogs adjusts supported layout and legends while preserving editable Matplotlib objects and vector output. Fonts, backends, canvas size and library versions can change the result. See [Presentation rules](developer/presentation.md#legend-fitting-and-limits).
 
 The [source revision](versions.md) identifies the documentation build. For changes to the package, consult the [changelog](../CHANGELOG.md).

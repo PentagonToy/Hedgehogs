@@ -162,3 +162,26 @@ def test_standalone_tree_uses_symmetric_canvas_margins_with_or_without_style(sty
     assert left > 0 and bottom > 0
     assert right < fig.bbox.width and top < fig.bbox.height
     assert max((right - left) / fig.bbox.width, (top - bottom) / fig.bbox.height) > .8
+
+
+@pytest.mark.parametrize('size', [(5, 3), (8, 5)])
+def test_branch_labels_have_no_fill_and_connectors_avoid_text(size):
+    fig, ax = plt.subplots(figsize=size)
+    hdg.plots.tree(classifier(), ax=ax)
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    labels = [text for text in ax.texts if text.get_text() in ('True', 'False')]
+    assert len(labels) == 2
+    for label in labels:
+        assert label.get_bbox_patch() is None
+        bounds = label.get_window_extent(renderer)
+        for line in ax.lines:
+            path = line.get_transform().transform_path(line.get_path())
+            assert not path.intersects_bbox(bounds, filled=False)
+        for annotation in ax.texts:
+            if annotation.arrow_patch is not None:
+                arrow = annotation.arrow_patch
+                path = arrow.get_transform().transform_path(arrow.get_path())
+                assert not path.intersects_bbox(bounds, filled=False)
+    fig.savefig(io.BytesIO(), format='png', transparent=True, dpi=300)
+    fig.savefig(io.BytesIO(), format='svg', transparent=True)

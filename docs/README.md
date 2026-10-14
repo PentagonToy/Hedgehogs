@@ -9,4 +9,4 @@ The [documentation site](https://pentagontoy.github.io/Hedgehogs/) provides [ins
 | [Implementation ownership](developer/architecture.md) | Module responsibilities and rendering lifecycle |
 | [Release preparation](developer/release.md) | Build, verify and publish distributions |
 
-Each topic has one reference. Palette previews and journal dimensions are included in the API pages rather than separate guides.
+Palette previews and journal dimensions are included in the API references.

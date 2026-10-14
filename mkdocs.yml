@@ -67,6 +67,7 @@ nav:
       - Overview: api/README.md
       - Figures: api/figures.md
       - Plots: api/plots.md
+      - SHAP visualisation: api/shap.md
       - Palettes: api/palettes.md
       - Tables: api/tables.md
       - Terminal and progress: api/terminal.md

@@ -56,7 +56,7 @@ hdg.Table.from_dataframe(
 )
 ```
 
-Create an independent `Table` from a pandas or Polars DataFrame without adding either library as a Hedgehogs dependency. The pandas index is excluded. Missing columns raise `KeyError`, an empty selection raises `ValueError`, and unsupported row interfaces raise `TypeError`.
+Returns an independent table without the pandas index. Missing columns raise `KeyError`; an empty selection raises `ValueError`; unsupported row interfaces raise `TypeError`. pandas and Polars are optional.
 
 | Parameter | Type | Default | Meaning |
 | --- | --- | --- | --- |
@@ -86,7 +86,7 @@ table.show()
 table.finish()
 ```
 
-Row methods accept separate values or a single list or tuple. Row widths must match the columns; mismatches raise `ValueError`. `update_row()` requires a non-negative existing index and raises `IndexError` otherwise. `sort()` accepts a column name or index, orders stored strings and returns the same table; `key=float` requests numeric ordering. The other methods return `None`.
+Rows accept separate values or one list or tuple. Width mismatches raise `ValueError`; an invalid update index raises `IndexError`. `sort()` returns the same table and orders stored strings; use `key=float` for numeric ordering.
 
 `show()` renders a static table. Live tables refresh during row changes and emit their final state through `finish()`; redirected output suppresses intermediate updates.
 
@@ -106,7 +106,7 @@ table.to_latex(path=None, *, caption=None, label=None)
 | `caption` | `None` | Optional LaTeX caption |
 | `label` | `None` | Optional LaTeX cross-reference label |
 
-`to_text()` and `to_html()` return strings. `to_csv()` writes the header and formatted rows and returns a `Path`. `to_latex()` returns a string and optionally writes it; its output requires the LaTeX `booktabs` package. Exports contain the formatted values stored by the table, so retain the original data when full numeric precision is required.
+`to_text()` and `to_html()` return strings. CSV writes headers and formatted rows, returning a `Path`. LaTeX returns a string and optionally writes it; include `booktabs` in the document.
 
 ## `Table.to_dataframe`
 
@@ -118,7 +118,9 @@ table.to_dataframe(backend="pandas")
 | --- | --- | --- |
 | `backend` | `"pandas"` | `"pandas"`, `"pd"`, `"polars"`, `"pl"`, or the imported pandas/Polars module |
 
-Returns an independent DataFrame with the table's column order and formatted strings. Numeric types, original precision, missing-value objects and a source DataFrame index cannot be recovered from formatted rows. Backend construction errors propagate. Unknown names raise `ValueError`, unsupported backend objects raise `TypeError`, and an unavailable optional library raises `ImportError`. Conversion imports the selected library only when needed; neither backend is required by Hedgehogs.
+Returns an independent DataFrame of formatted strings in column order. Original numeric types, precision, missing-value objects and indices are unavailable.
+
+Unknown backends raise `ValueError`; unsupported objects raise `TypeError`; missing optional libraries raise `ImportError`. Backend construction errors propagate.
 
 ```python
 import pandas as pd
@@ -127,4 +129,4 @@ frame = table.to_dataframe(pd)
 frame = table.to_dataframe("pl")
 ```
 
-The second call requires Polars to be available. Use the original dataset for numerical analysis; this conversion exports the presentation table.
+The Polars call requires Polars. Retain the original dataset for numerical analysis.

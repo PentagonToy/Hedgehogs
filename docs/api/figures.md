@@ -13,6 +13,7 @@ Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`.
 | `hdg.figures.style_colorbar(...)` | Style a colour bar | `None` |
 | `hdg.figures.apply_grid(...)` | Add a major grid | `None` |
 | `hdg.figures.enable_minor_ticks(...)` | Add minor tick locators | `None` |
+| `hdg.figures.square(...)` | Set or release a square plotting box | `None` |
 
 ## Styling and layout
 
@@ -39,7 +40,7 @@ hdg.set_style(
 | `scale_exponent` | `float` | `0.5` | Width-scaling exponent |
 | `palette` | `str` | `"okabe-ito"` | Registered palette name |
 
-Returns `None`. Filled markers receive black outlines unless an edge colour is supplied; unfilled markers such as `"x"` use a single stroke colour. The style applies to new Matplotlib figures. Single panels scale relative to `figure_size`; subplot grids retain configured point sizes. See [Presentation proportions](../developer/presentation.md) for the scaling rules.
+Filled markers receive black outlines unless overridden; unfilled markers use one stroke colour. New single panels scale relative to `figure_size`, while grids retain configured point sizes. See [Presentation rules](../developer/presentation.md).
 
 ### `reset_style`
 
@@ -76,7 +77,7 @@ hdg.set_style(figure_size=size)
 fig, axes = plt.subplots(2, 2, figsize=size, layout="constrained")
 ```
 
-Use Matplotlib's `gridspec_kw`, `sharex`, `sharey` and `layout` for panel geometry. For colour bars and nested axes, select `layout="constrained"`; `ax.set_box_aspect(1)` gives a square plotting box.
+Use Matplotlib's `gridspec_kw`, `sharex`, `sharey` and `layout` for panel geometry. For colour bars and nested axes, select `layout="constrained"`; `hdg.figures.square(ax=ax)` gives a square plotting box.
 
 ## Explicit figure helpers
 
@@ -96,7 +97,7 @@ hdg.figures.enable_minor_ticks(ax=None, x=True, y=True)
 | `apply_grid()` | `ax=None` selects current axes; `axis="both"` accepts `x`, `y`, or `both` | Add a dotted major grid beneath the plotted data |
 | `enable_minor_ticks()` | `ax=None` selects current axes; `x=True`, `y=True` | Install automatic minor locators for linear axes |
 
-All four helpers return `None` and operate on existing artists. Supply one panel label per axes; omitted labels generate `(a)`, `(b)`, and so on. `style_colorbar()` preserves the label unless a replacement is supplied. `apply_grid()` and `enable_minor_ticks()` default to the current axes. Minor tick locators apply to linear axes.
+All four helpers return `None` and edit existing artists. Supply one label per panel.
 
 ```python
 hdg.figures.annotate_panels(axes)
@@ -112,4 +113,27 @@ See [Palettes and series styles](palettes.md) for colour selection, series mappi
 
 ## Specialised plots
 
-See the [tree and pairplot reference](plots.md) for `hdg.plots.tree()` and `hdg.plots.pairplot()`.
+See [Plots](plots.md) for trees, pairplots and classification regions.
+
+### `figures.square`
+
+```python
+hdg.figures.square(enabled=True, *, ax=None) -> None
+```
+
+Fits a square plotting box within the current axes' allocated layout space. For allocated physical width W and height H, its side is `min(W, H)`. Layout margins, labels and colour bars affect that allocation; the helper keeps the figure's `figsize`. Resizing or layout changes refit the square through Matplotlib.
+
+`ax=None` selects the current axes. Pass one axes, an iterable or a NumPy axes grid to select panels explicitly; the helper applies only to those panels, not their colour-bar axes. `enabled=False` releases the box constraint. Other values raise `TypeError`.
+
+```python
+plt.figure(figsize=(7, 4))
+plt.plot(x, y)
+hdg.figures.square()
+hdg.plots.show()
+
+hdg.figures.square(False)
+```
+
+This wraps `Axes.set_box_aspect(1)`, not `set_aspect("equal")`: it makes the box square without requesting equal x/y data units. Default independent data scaling preserves limits. Existing fixed data-aspect settings remain active and may require Matplotlib to adjust limits. Disabling square clears the constraint rather than restoring a previous box ratio.
+
+Default single-panel vertical colour bars follow the final plotting-box height during drawing and resizing. Non-default `shrink`, explicit `cax` or anchors, shared bars, horizontal bars and extension markers retain native placement. This alignment applies while Hedgehogs style is active.

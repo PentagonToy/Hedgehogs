@@ -2,11 +2,11 @@
 
 `legend_grid.py` reuses the packaged default hybrid and exposes classic/grid-only comparisons for development. No ML dependency is required.
 
-The policy aggregates every finite visible scatter point into an integer occupancy grid, traces short line segments, and evaluates legend-sized windows with summed-area tables. Text overlap takes priority over data overlap. Ties favour edge alignment; enclosed free regions prefer clearance from occupied positions. The grid is used for placement only: plot coordinates and vector output remain intact.
+The policy evaluates an occupancy grid using all finite visible scatter points, supported lines and text. Plot coordinates and vector output remain intact.
 
 This is a bounded approximation. It evaluates a spatial cost map rather than proving a continuous global optimum or predicting human preference. Complex artists, long paths and unsupported axes fall back to the existing policy. Matplotlib and Hedgehogs both use ten named location codes; `right` and `center right` coincide, giving nine distinct standard positions.
 
-The [mathematical design](../../docs/developer/legend-experiment.md) records window costs, summed-area evaluation, tie-breaking and the proposed hybrid policy.
+The [mathematical design](../../docs/developer/legend-experiment.md) defines costs, tie-breaking and hybrid acceptance.
 
 ## Run the comparison
 

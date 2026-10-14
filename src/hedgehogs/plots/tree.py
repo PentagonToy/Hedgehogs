@@ -235,18 +235,31 @@ def tree(
         y = centre(node)
         for branch, child in zip(('True', 'False'), node.children):
             child_y = centre(child)
+            start = (node.x, y + node.height / 2)
+            end = (child.x, child_y - child.height / 2)
+            dx, dy = end[0] - start[0], end[1] - start[1]
+            midpoint = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
+            branch_font = FontProperties(family=_FONT_SERIF, size=font * .85)
+            label_width, label_height = measure(branch, branch_font)
+            # Leave a real gap around the measured text instead of masking
+            # the connector with an opaque box in transparent exports.
+            clearance = min(.45, (label_width / 2 + font * .2) / abs(dx) if dx else .45,
+                            (label_height / 2 + font * .2) / abs(dy) if dy else .45)
+            before = (midpoint[0] - clearance * dx, midpoint[1] - clearance * dy)
+            after = (midpoint[0] + clearance * dx, midpoint[1] + clearance * dy)
+            line, = ax.plot([start[0], before[0]], [start[1], before[1]], color='black',
+                            linewidth=plt.rcParams['lines.linewidth'] * scale, zorder=1)
+            fixed(line)
             arrow = ax.annotate(
-                '', (child.x, child_y - child.height / 2),
-                xytext=(node.x, y + node.height / 2),
+                '', end, xytext=after,
                 arrowprops=dict(arrowstyle='-|>', color='black', linewidth=plt.rcParams['lines.linewidth'] * scale,
                                 mutation_scale=font * .8 * scale, shrinkA=0, shrinkB=2 * scale),
                 fontfamily=_FONT_SERIF, zorder=1,
             )
             fixed(arrow)
             fixed(arrow.arrow_patch)
-            label_artist = ax.annotate(branch,
-                            ((node.x + child.x) / 2, (y + node.height / 2 + child_y - child.height / 2) / 2), ha='center', va='center', fontsize=font * .85 * scale, fontfamily=_FONT_SERIF,
-                            bbox=dict(facecolor='white', edgecolor='none', pad=1), zorder=2)
+            label_artist = ax.annotate(branch, midpoint, ha='center', va='center',
+                                       fontsize=font * .85 * scale, fontfamily=_FONT_SERIF, zorder=2)
             fixed(label_artist)
             annotations.append(label_artist)
         patch = FancyBboxPatch((node.x - node.width / 2, y - node.height / 2),

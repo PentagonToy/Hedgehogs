@@ -23,6 +23,6 @@ hdg.plots.save("first-figure.svg", fig=fig, bbox_inches=None)
 hdg.plots.show(fig=fig)
 ```
 
-`save()` and `show()` apply the same finishing step. The example saves a vector SVG in the current directory and displays the figure through Matplotlib's active backend. Change the file extension to PDF for publication. Figure objects remain editable; use `hdg.reset_style()` to restore Matplotlib defaults.
+`save()` and `show()` share finishing. This example writes SVG; use a `.pdf` filename for publication. Artists remain editable. `reset_style()` restores Matplotlib defaults.
 
 Compare [gallery examples](gallery.md), choose a [palette](api/palettes.md), or inspect the [figure](api/figures.md) and [plot](api/plots.md) references. For non-graphical output, start with [tables](api/tables.md) or [progress](api/terminal.md).

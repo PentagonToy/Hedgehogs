@@ -18,6 +18,60 @@ def style():
     hdg.reset_style()
 
 
+def test_legend_entries_do_not_change_panel_typography_after_edits():
+    fig, ax = plt.subplots(figsize=(6.72, 4.4))
+    for index in range(3):
+        ax.scatter([index], [index], label=f'Class {index}')
+    ax.set(xlabel='x', ylabel='y', title='Samples')
+    ax.legend(loc='upper left')
+    prepare(fig)
+
+    def sizes():
+        return tuple(text.get_fontsize() for text in (
+            ax.xaxis.label, ax.yaxis.label, ax.title,
+            ax.get_xticklabels()[0], ax.get_yticklabels()[0],
+        ))
+
+    original = sizes()
+    for index in range(2):
+        ax.scatter([index], [index + .5], label=f'Example {index}')
+    ax.legend(loc='upper left')
+    prepare(fig)
+    assert sizes() == original
+    prepare(fig)
+    assert sizes() == original
+
+
+def test_subplot_typography_matches_with_different_legend_counts():
+    fig, axes = plt.subplots(1, 2, figsize=(8, 4))
+    for ax, count in zip(axes, (3, 5)):
+        for index in range(count):
+            ax.scatter([index], [index], label=f'Class {index}')
+        ax.set(xlabel='x', ylabel='y', title='Samples')
+        ax.legend(loc='upper left')
+    prepare(fig)
+    sizes = [tuple(text.get_fontsize() for text in (
+        ax.xaxis.label, ax.yaxis.label, ax.title,
+        ax.get_xticklabels()[0], ax.get_yticklabels()[0],
+    )) for ax in axes]
+    assert sizes[0] == sizes[1]
+
+
+@pytest.mark.parametrize('edge_width', [None, 1.7])
+def test_scatter_legend_edges_follow_source_after_finishing(edge_width):
+    fig, ax = plt.subplots(figsize=(6.72, 4.4))
+    options = {} if edge_width is None else {'linewidths': edge_width}
+    source = ax.scatter([0, 1], [0, 1], label='Samples', **options)
+    legend = ax.legend(loc='upper left')
+    handles = getattr(legend, 'legend_handles', None)
+    if handles is None:
+        handles = legend.legendHandles
+    for _ in range(2):
+        prepare(fig)
+        fig.canvas.draw()
+        assert list(handles[0].get_linewidths()) == list(source.get_linewidths())
+
+
 def benchmark():
     fig, ax = plt.subplots(figsize=(7, 4.5))
     y = list(range(6))

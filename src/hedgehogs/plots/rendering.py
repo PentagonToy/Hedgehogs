@@ -23,6 +23,32 @@ from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, PackerBase
 from matplotlib.patches import Patch, Rectangle
 from matplotlib.text import Text
+from matplotlib.transforms import Bbox
+
+
+class _ParentHeightColorbarLocator:
+    """Match a default single-panel colour bar to its resolved plotting box."""
+
+    def __init__(self, parent: Axes, original: Any, generation: Any):
+        self.parent = parent
+        self.original = original
+        self.generation = generation
+
+    def __call__(self, ax: Any, renderer: Any) -> Bbox:
+        position = self.original(ax, renderer)
+        colourbar = getattr(ax, '_colorbar', None)
+        if (self.generation is not _hook_generation or colourbar is None
+                or colourbar.extend != 'neither'):
+            return position
+        figure = self.parent.figure
+        panels = [panel for panel in figure.axes if not hasattr(panel, '_colorbar')]
+        if panels != [self.parent]:
+            return position
+        bounds = self.parent.get_position()
+        return Bbox.from_bounds(position.x0, bounds.y0, position.width, bounds.height)
+
+    def get_subplotspec(self):
+        return self.original.get_subplotspec()
 
 
 @contextmanager
@@ -692,7 +718,17 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
             # the native constraint solver before colourbar creation, while
             # Matplotlib can still choose compatible colourbar ownership.
             figure.set_layout_engine("constrained")
-        return original_colorbar(figure, *args, **kwargs)
+        result = original_colorbar(figure, *args, **kwargs)
+        info = getattr(result.ax, '_colorbar_info', {})
+        parents = info.get('parents', [])
+        panels = [axis for axis in figure.axes if not hasattr(axis, '_colorbar')]
+        if (style is not None and cax is None and result.orientation == 'vertical'
+                and result.extend == 'neither' and info.get('shrink', 1) == 1
+                and not any(key in kwargs for key in ('anchor', 'panchor'))
+                and len(parents) == 1 and panels == parents):
+            locator = result.ax.get_axes_locator()
+            result.ax.set_axes_locator(_ParentHeightColorbarLocator(parents[0], locator, generation))
+        return result
 
     _installed_colorbar = colorbar
     setattr(Figure, "colorbar", colorbar)

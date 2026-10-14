@@ -61,7 +61,9 @@ def test_progress_api():
 
 
 def test_specialised_plots_have_one_public_namespace():
-    assert hdg.plots.__all__ == ["tree", "pairplot", "show", "save"]
+    assert hdg.plots.__all__ == ["tree", "pairplot", "decision_regions", "legend", "force_plot", "summary_plot", "waterfall_plot", "dependence_plot", "decision_plot", "show", "save"]
+    assert callable(hdg.plots.legend)
+    assert callable(hdg.plots.decision_regions)
     assert callable(hdg.plots.tree)
     assert callable(hdg.plots.pairplot)
     assert not hasattr(hdg, "plot_tree")
@@ -89,7 +91,7 @@ def test_public_introspection_is_clean_and_describes_new_interfaces():
 
 
 def test_figure_helpers_have_one_namespace_without_removed_wrappers():
-    expected = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks']
+    expected = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks', 'square']
     assert hdg.figures.__all__ == expected
     assert dir(hdg.figures) == sorted(expected)
     for name in expected:

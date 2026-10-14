@@ -4,7 +4,7 @@ The independent [Hedgehogs site](https://pentagontoy.github.io/Hedgehogs/) publi
 
 ## Source ownership
 
-Edit the original documents under `docs/`. The site hook maps `home.md` to the homepage, preserves the repository documentation index as `overview.md`, and serves the existing SVG artwork locally. SVG links include a content revision so artwork changes invalidate cached previews. Source and notebook links point to GitHub. The [Sources page](https://pentagontoy.github.io/Hedgehogs/versions/) records the build commit.
+Edit `docs/`. The hook maps `home.md` to the homepage and the documentation index to `overview.md`. It serves SVGs with content-hash revisions and points source links to GitHub. The [Sources page](https://pentagontoy.github.io/Hedgehogs/versions/) records the build commit.
 
 `others/assets/icon.svg` is the canonical transparent symbol used by the README, homepage, header and favicon. Keep compact padding and check light and dark backgrounds after artwork changes. Header and favicon URLs are versioned automatically by content hash; update the README image revision when replacing the SVG.
 
@@ -20,13 +20,13 @@ The Documentation workflow builds and deploys relevant pushes to `main`. Builds 
 
 ## Gallery updates
 
-`tools/docs/gallery.py` renders the synthetic examples from the checked-out package into `docs/assets/gallery/`. Run it explicitly in a development environment after a relevant presentation change, inspect the SVGs, then commit the results alongside the source. Keep the gallery code and examples aligned. Gallery generation is separate from the documentation build and ordinary tests.
+`tools/docs/gallery.py` renders synthetic examples into `docs/assets/gallery/`. After a relevant presentation change, run it explicitly, inspect the SVGs and commit them with the source. Site builds and ordinary tests do not regenerate the gallery.
 
 Check generated links, artwork, installation tabs and light/dark presentation before publishing. Existing API pages remain the canonical references; keep introductory guides short.
 
 ## Notebook examples
 
-Selected notebook cells are imported as copyable code during the documentation build without execution. Edit the original notebook to update its page. Pages include saved PNG and table/text outputs, labelled as historical previews. Saved outputs are previews, not new validation results.
+The site imports selected notebook code and saved outputs without execution. Edit the notebook to update its page. Saved outputs are historical previews, not new validation results.
 
 ## Portable Markdown
 

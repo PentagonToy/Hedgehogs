@@ -7,8 +7,9 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 | Group | Public names | Purpose |
 | --- | --- | --- |
 | Figure settings | `set_style`, `reset_style`, `figsize` | Configure style and read canvas dimensions |
-| Figure helpers | `figures.annotate_panels`, `figures.style_colorbar`, `figures.apply_grid`, `figures.enable_minor_ticks` | Explicitly adjust existing axes and panels |
-| Specialised plots | `plots.tree`, `plots.pairplot`, `plots.show`, `plots.save` | Draw, finish and save figures |
+| Figure helpers | `figures.annotate_panels`, `figures.style_colorbar`, `figures.apply_grid`, `figures.enable_minor_ticks`, `figures.square` | Explicitly adjust existing axes and panels |
+| General plots | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` | Draw, finish and save figures |
+| SHAP visualisation | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` | Draw supplied feature attributions |
 | Palettes | `Palette`, `get_palette`, `build_color_map`, `build_style_map`, `register_palette`, `save_palette`, `load_palette` | Select and map colours |
 | Tables | `Table` | Format, display and export rows |
 | Terminal output | `Progress`, `echo`, `rule`, `info` | Report activity and inspect package versions |
@@ -19,7 +20,8 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 | Task | Reference | Main API |
 | --- | --- | --- |
 | Style and size figures | [Figures](figures.md) | `set_style`, `figsize`, `figures.*` |
-| Draw, finish and save plots | [Plots](plots.md) | `plots.tree`, `plots.pairplot`, `plots.show`, `plots.save` |
+| Draw, finish and save plots | [Plots](plots.md) | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` |
+| Draw or finish SHAP explanations | [SHAP visualisation](shap.md) | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` |
 | Select colours or define series styles | [Palettes](palettes.md) | `get_palette`, `build_style_map`, `register_palette` |
 | Format and export results | [Tables](tables.md) | `Table` |
 | Report progress and status | [Terminal output](terminal.md) | `Progress`, `echo`, `rule` |

@@ -41,7 +41,7 @@ def refine_presentation(figure, state, annotations) -> None:
     from matplotlib.category import StrCategoryLocator
     from matplotlib.font_manager import FontProperties
     from matplotlib.lines import Line2D
-    from matplotlib.collections import QuadMesh
+    from matplotlib.collections import QuadMesh, PathCollection
 
     axes = [ax for ax in figure.axes
             if getattr(ax, 'get_subplotspec', lambda: None)() is not None
@@ -109,11 +109,9 @@ def refine_presentation(figure, state, annotations) -> None:
     for ax in [*axes, *colourbars]:
         properties = state.values.setdefault(ax, {})
         value_labels = annotations(ax)
-        legend = ax.get_legend()
         dense = (getattr(ax, '_hedgehogs_dense_labels', False)
                  or bool(ax.images) or any(isinstance(item, QuadMesh) for item in ax.collections)
                  or len(value_labels) >= 6
-                 or (legend is not None and len(legend.get_texts()) > 4)
                  or any(isinstance(axis.get_major_locator(), (FixedLocator, StrCategoryLocator))
                         and len(axis.get_major_ticks()) > 4 for axis in (ax.xaxis, ax.yaxis)))
         panel_stamp = (stamp, dense)
@@ -211,6 +209,13 @@ def refine_presentation(figure, state, annotations) -> None:
                 if isinstance(source, Line2D) and isinstance(handle, Line2D):
                     if state.values.get(source, {}).get('finish_role.linewidth') is not None:
                         stroke(handle, 'linewidth', float(plt.rcParams['lines.linewidth']), outline)
+                    handle.set_markeredgewidth(source.get_markeredgewidth())
+                    widths = (source.get_markeredgewidth(),)
+                    state.values.setdefault(handle, {})['markeredgewidth'] = (widths, widths, 1.)
+                elif isinstance(source, PathCollection) and isinstance(handle, PathCollection):
+                    handle.set_linewidth(source.get_linewidth())
+                    widths = state._values(source.get_linewidth())
+                    state.values.setdefault(handle, {})['linewidths'] = (widths, widths, 1.)
             stroke(legend.get_frame(), 'linewidth', float(plt.rcParams['patch.linewidth']), outline)
             expected = points(plt.rcParams['legend.fontsize'])
             for text in legend.get_texts():

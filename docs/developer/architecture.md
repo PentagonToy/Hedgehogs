@@ -10,8 +10,10 @@ Keep style configuration in `hedgehogs`, explicit artist helpers in `hedgehogs.f
 | `plots/rendering.py` | Matplotlib hooks, proportional sizing, and layout corrections |
 | `plots/tree.py` | Decision-tree labels, node layout, and drawing |
 | `plots/pairplot.py` | Numeric-column selection, density estimates, and scatter matrices |
+| `plots/decision_regions.py`, `plots/legend.py` | Classification backgrounds and explicit legend placement |
+| `plots/attributions.py` | Force, summary, waterfall, dependence and decision drawings |
 | `plots/output.py` | Current-figure selection and multi-format saving |
-| `figures.py` | Explicit panel, colour-bar, grid and minor-tick adjustments |
+| `figures.py` | Explicit panel, colour-bar, grid, minor-tick and box-aspect adjustments |
 | `core/palette.py` | Palette definitions and series styles |
 | `tables/table.py` | Formatted tables and exports |
 | `terminal/progress.py`, `terminal/output.py` | Progress and status output |
@@ -43,6 +45,8 @@ Keep the dependency direction explicit: presentation modules may import `core`; 
 
 During ordinary styled draws, a local cache reuses native automatic legend searches with matching dimensions, renderer, axes bounds, limits and transform matrix. Remove temporary wrappers and cached results after each draw, including setup and rendering failures. A temporary wrapper retained by another library delegates to native search after its draw ends. Explicit anchors and instance search overrides bypass the cache.
 
+Default single-panel vertical colour bars use a locator that follows the parent’s active box height. The adapter delegates native metadata and retires with its rendering-hook generation; explicit colour-bar geometry and shared/extended bars bypass it.
+
 ## Figure finishing
 
 `plots.show()` and `plots.save()` share `presentation.prepare()`:
@@ -54,7 +58,7 @@ During ordinary styled draws, a local cache reuses native automatic legend searc
 
 During measurement, automatic internal legends use a temporary upper-right position and do not reserve layout space. Restore their automatic request and layout flag on exit. Explicit locations and anchors keep their normal layout participation.
 
-The packaged `_legend` hybrid evaluates conventional locations in named order, ranking clipping, text overlap and data overlap. A zero score stops the search; otherwise supported line/scatter figures receive an occupancy-grid proposal, accepted only after an improved audit and at least 10% relative gain for data-only changes. Equal scores retain the conventional result. Exclude the legend's own children from overlap checks. Transform visible point collections once and count containment with inclusive NumPy bounds, ignoring masked and non-finite coordinates. Retain every valid point. Patch bounds, line intersections and collection offsets approximate occupancy. Finishing avoids native `best` searches, automatic rasterisation and point reduction.
+Legend selection follows the [hybrid search](legend-experiment.md#limits-and-integration). Exclude the legend itself from collision checks. Transform visible scatter points once; ignore masked and non-finite coordinates without reducing valid data. Patch bounds, line intersections and offsets estimate occupancy.
 
 Bar-value labels move outward along their bars while retaining endpoint anchors and category rows. Warn about unresolved label collisions or a legend that cannot fit inside its axes. Data overlap ranks legend candidates without generating a warning.
 
@@ -70,7 +74,11 @@ Classifier `value` arrays can contain counts or normalised shares. Recover weigh
 
 Pairplots share outer x axes by column and y axes by row. Diagonal inset axes retain independent density scales. Gaussian KDE uses Scott bandwidth on a 256-point grid and counts duplicate observations at full weight. Singleton and constant groups fall back to histograms. Display limits can truncate KDE tails.
 
-Pairplot layout measures legend dimensions, reserves its space, and settles panel sizes with typography in bounded passes. See [Presentation proportions](presentation.md) for the scale calculation. Fitting runs during construction; later artist edits remain available, while arbitrary canvas resizing does not repeat this calculation.
+Pairplots reserve measured legend space and settle panel sizes in bounded passes. [Presentation rules](presentation.md) define scaling. Fitting runs during construction; later artist edits remain available, but canvas resizing does not repeat fitting.
+
+Decision regions evaluate a 200 × 200 grid over the axes limits. Background contours are excluded from data autoscaling and refreshed when limits change. Region and sample opacity are 0.25 and 0.85. Discrete boundaries follow model label order.
+
+Attribution drawings consume values without evaluating a model. Force bands group omitted contributions by sign; label widths determine rows. Summary dots use 80 horizontal bins per feature with alternating vertical lanes, bounded to ±0.32 of a row. The bins control placement only; all supplied observations remain in the drawing. Waterfalls retain the complete sum through a signed remainder row. Decision paths use one common feature permutation and a per-observation remainder when truncated. Dependence drawings omit non-finite x values and use only explicit colour selection.
 
 ## Verification
 

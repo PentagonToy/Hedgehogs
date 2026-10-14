@@ -51,7 +51,9 @@ ax.plot(x, baseline, label="Baseline", **styles["baseline"])
 ax.plot(x, prediction, label="Model", **styles["model"])
 ```
 
-`build_color_map()` assigns colours alone. `build_style_map()` combines colours, markers and line styles for Matplotlib lines. Both functions retain the first occurrence of each label. Their `palette` argument defaults to Okabe–Ito independently of the active figure style; pass it explicitly for another palette. Colours repeat when labels outnumber colours. Line styles cycle through `-`, `--`, `-.` and `:`; markers cycle through `o`, `s`, `^`, `D`, `v`, `P` and `X`. These cycles can eventually repeat complete style combinations.
+`build_color_map()` assigns colours; `build_style_map()` also assigns markers and line styles. Labels retain first-occurrence order. Both default to Okabe–Ito independently of the active figure style.
+
+Styles cycle through `-`, `--`, `-.`, `:` and markers through `o`, `s`, `^`, `D`, `v`, `P`, `X`. Colours and complete combinations eventually repeat.
 
 ## Register and save
 

@@ -27,7 +27,7 @@ hdg.Progress(iterable=None, total=None, desc="", width=40, mininterval=0.1, smoo
 
 Invalid constructor values raise `ValueError`; `update()` after `finish()` raises `RuntimeError`.
 
-Calls to `set()` update metrics immediately but remain subject to `mininterval`; the next eligible `set()` or `update()` refresh displays the latest values. `finish()` always preserves the final state.
+`mininterval` limits refresh frequency. `finish()` always renders the final state.
 
 | Parameter | Type | Default | Constraint or meaning |
 | --- | --- | --- | --- |
@@ -48,7 +48,7 @@ Write a status message with optional colour and emphasis.
 hdg.echo(message, *, tone=None, color=None, bold=False, file=None) -> None
 ```
 
-Returns `None`. Explicit `color` overrides the colour selected by `tone`; unknown tones or invalid colours raise `ValueError`. `bold=False` disables emphasis, and `file=None` selects notebook HTML or standard output. An explicit `file` receives stream output. Redirected terminal output stays plain; `NO_COLOR` and `TERM=dumb` disable colour.
+Explicit `color` overrides `tone`. Invalid colours or tones raise `ValueError`. Redirected output stays plain; `NO_COLOR` and `TERM=dumb` disable terminal colour.
 
 | Parameter | Default | Meaning |
 | --- | --- | --- |
@@ -93,7 +93,7 @@ progress.to_text()
 progress.to_html()
 ```
 
-`update()` advances completed work by a finite, non-negative amount. `set_description()` changes the label; `set()` records named metrics for the next eligible refresh. These methods and `finish()` return `None`. `to_text()` and `to_html()` return strings without selecting an output destination. A context manager calls `finish()` on exit, including after an exception.
+`update()` accepts a finite, non-negative amount. `set_description()` changes the label; `set()` records metrics for the next refresh. These methods return `None`. Text and HTML renderers return strings. A context manager calls `finish()` on exit, including after an exception.
 
 ## Package information
 

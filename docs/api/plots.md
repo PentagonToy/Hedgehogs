@@ -1,6 +1,8 @@
 # Plot API
 
-Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`. Tree and pairplot create editable Matplotlib objects. `plots.show()` finishes existing figures for display.
+Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`. Specialised plots create editable Matplotlib objects. `plots.show()` finishes existing figures for display.
+
+SHAP-value drawings and SHAP integration have a separate [SHAP reference](shap.md). The Python calls remain under `hdg.plots`.
 
 ## API index
 
@@ -8,8 +10,47 @@ Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`.
 | --- | --- | --- |
 | `hdg.plots.tree(...)` | Draw a fitted decision tree | `list[Annotation]` |
 | `hdg.plots.pairplot(...)` | Compare numeric variables by category | `(Figure, axes)` |
+| `hdg.plots.decision_regions(...)` | Draw two-feature classification regions and samples | `Axes` |
+| `hdg.plots.legend(...)` | Place the current axes legend inside or outside | `Legend` |
 | `hdg.plots.show(...)` | Finish and display figures | `None` |
 | `hdg.plots.save(...)` | Finish and save the current or selected figure | `tuple[Path, ...]` |
+
+## `plots.decision_regions`
+
+Draw a fitted classifier's regions and labelled observations on the current Matplotlib axes.
+
+```python
+hdg.plots.decision_regions(
+    X, y, classifier, *, categories=None, markers=None, palette=None,
+)
+```
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `X` | Required | Two numeric feature columns, supplied as an array, list, DataFrame or mapping of columns |
+| `y` | Required | One class label per row, supplied as a vector, Series or one-column table |
+| `classifier` | Required | Fitted model with `predict(X)` returning one label per row |
+| `categories` | `None` | Mapping from class labels to non-empty display names, such as `{0: "malignant", 1: "benign"}`; omitted labels retain their original names |
+| `markers` | `None` | Marker sequence; defaults to square, filled plus, circle, upward triangle and downward triangle |
+| `palette` | `None` | Palette name or `Palette`; uses the active style palette, falling back to Okabe–Ito |
+
+Returns the current `Axes` and retains existing artists. Select another axes with `plt.sca(ax)`. Inputs require matching row counts, finite features and non-missing, hashable labels. Numeric strings in `X` are converted to floats.
+
+Class order follows `classifier.classes_`, or first occurrence in `y` when absent. Predictions must use those classes. Colours and markers repeat as needed; filled markers have black outlines. Classifiers with `feature_names_in_` receive named DataFrame columns.
+
+`categories` changes legend names only. Its keys must belong to the model classes; predictions and class order remain unchanged.
+
+A 200 × 200 grid approximates the boundaries. Very narrow regions may need finer analysis. See the [drawing rules](../developer/architecture.md#specialised-drawings) for grid and opacity defaults.
+
+Additional scatter or line data can expand the axes through Matplotlib autoscaling; the background follows the new limits. Explicit axis limits remain fixed.
+
+```python
+hdg.set_style()
+ax = hdg.plots.decision_regions(X, y, classifier, markers=["o", "s", "^"])
+ax.set(xlabel="Petal length [cm]", ylabel="Petal width [cm]")
+ax.legend()
+hdg.plots.show()
+```
 
 ## `plots.tree`
 
@@ -37,15 +78,17 @@ hdg.plots.tree(
 | `ax` | `None` | Destination axes; defaults to the current axes or a new figure |
 | `fontsize` | `None` | Positive base font size before fitting; defaults to the configured body size |
 
-Returns the text annotations. The function clears the destination axes and retains an existing canvas size. Without an open figure, it creates a canvas that fits the tree. Invalid models, selections, or options raise `ValueError`.
+Returns text annotations. The tree replaces the axes content and fits the existing canvas, or creates a canvas when none is open. Invalid models or options raise `ValueError`.
 
 `samples` counts observations; classifier `value` reports weighted class counts, and regression `value` reports the prediction. With `proportion=True`, samples become percentages of the root count and classifier values become proportions. `max_depth` marks omitted subtrees.
 
 ```python
 hdg.set_style()
 hdg.plots.tree(dt, feature_names=["length", "width"], max_depth=3)
-plt.savefig("decision_tree.pdf")
+hdg.plots.save("decision_tree.pdf")
 ```
+
+Branch labels have no background fill. Connectors leave a measured gap around `True` and `False`, preserving transparent exports without white label boxes.
 
 ## `plots.pairplot`
 
@@ -71,19 +114,41 @@ hdg.plots.pairplot(
 | `palette` | `None` | Palette name or `Palette`; defaults to the active style, then Okabe–Ito |
 | `figsize` | `None` | Canvas width and height in inches; `None` sizes the matrix and legend automatically |
 
-Returns `(fig, axes)` with an $n \times n$ axes array. Upper-triangle axes remain present but hidden when `corner=True`. The function preserves global style. Invalid columns, category order, bins, or opacity raise `ValueError`.
+Returns `(fig, axes)` with an $n \times n$ array. `corner=True` hides upper panels. Global style is preserved; invalid selections or options raise `ValueError`.
 
 Missing values are omitted per panel; missing `hue` values exclude the row. Each category has an independently normalised density. Singleton and constant groups use a histogram when KDE cannot estimate a distribution.
 
 ```python
 hdg.set_style()
 fig, axes = hdg.plots.pairplot(df, hue="species", corner=True)
-fig.savefig("iris_pairs.pdf")
+hdg.plots.save("iris_pairs.pdf", fig=fig)
 ```
 
 The outer y labels identify row variables. Diagonal curves use hidden density axes: their heights cannot be read from the outer ticks or compared across diagonal panels. Use separate, labelled density plots for quantitative reporting.
 
-See [Figures](figures.md) for style and export guidance, and [Presentation proportions](../developer/presentation.md) for layout and scaling rules.
+## `plots.legend`
+
+Place a legend for the current axes, using Hedgehogs style defaults.
+
+```python
+hdg.plots.legend(loc="best", domain="inside", ncol=1)
+```
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `loc` | `"best"` | Matplotlib location name or code |
+| `domain` | `"inside"` | `inside` (`in`, `i`) or `outside` (`out`, `o`) |
+| `ncol` | `1` | Positive column count |
+
+Inside placement follows `plt.legend()`. Outside, `upper` locations sit above the title, `lower` locations below the x label, and `center left/right` beside the axis labels. Outside `best` selects the right side; `center` has no outside meaning.
+
+Returns an editable `Legend`. Outside placement follows resizing and label edits. Set its `bbox_to_anchor` explicitly to take over placement.
+
+```python
+plt.plot(x, y, label="Model")
+hdg.plots.legend(loc="lower center", domain="outside", ncol=3)
+hdg.plots.show()
+```
 
 ## `plots.show`
 
@@ -98,9 +163,9 @@ hdg.plots.show(fig=None, *, block=None) -> None
 | `fig` | `None` | Figure to finish; `None` finishes all open figures |
 | `block` | `None` | Matplotlib display mode: `True`, `False`, or the backend default (`None`) |
 
-Returns `None`; an invalid `fig` raises `TypeError`. Display follows `plt.show()`, including notebook and interactive-backend behaviour. A selected `fig` limits finishing; Matplotlib can still display other open windows.
+Display follows `plt.show()`. Selecting `fig` limits finishing, although Matplotlib may display other windows. An invalid figure raises `TypeError`.
 
-Finishing restores point-sized bases, refines default typography and numeric tick density, compares legend positions, and separates supported bar-value labels along their bars. Data, axis limits, and category order remain unchanged. Explicit font options, custom tick locators and legend anchors retain their settings. Only `loc="best"` requests automatic search within the axes. The default hybrid retains a conventional position unless an audited free-position proposal improves the overlap score; data-only improvements require at least 10% relative gain. Equal scores retain the conventional position. Named locations and explicit anchors remain fixed; outside placement requires `bbox_to_anchor`. A warning reports remaining bar-label collisions.
+Finishing adjusts default typography, numeric ticks and supported bar-value labels. It preserves data, limits and explicit settings. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
 
 ```python
 hdg.set_style()
@@ -111,7 +176,7 @@ ax.legend()
 hdg.plots.show()
 ```
 
-`hdg.plots.save()` applies the same finishing step. Unchanged repeated output retains its layout; edits reopen measurement without cumulative resizing. Ordinary `plt.show()` uses the ordinary styled-rendering policy. Finishing neither rasterises nor subsamples points; PDF and SVG output stays vector unless rasterisation is explicitly requested. See [Presentation rules](../developer/presentation.md#legend-fitting-and-limits) for fitting and reproducibility.
+`save()` uses the same finishing. Repeated output avoids cumulative resizing. PDF and SVG remain vector unless rasterisation is explicitly requested. [Presentation rules](../developer/presentation.md#legend-fitting-and-limits) describe fitting and reproducibility.
 
 ## `plots.save`
 
@@ -138,7 +203,9 @@ Finish the figure, write each requested format, and return paths in format order
 | `close` | `False` | Close the figure after all exports succeed |
 | `**savefig_kw` | Empty | Additional Matplotlib `savefig()` options |
 
-Without a current figure, omitted `fig` raises `ValueError` without creating an empty figure. An invalid explicit figure raises `TypeError`. An extension selects one format and preserves the filename. Without an extension, `formats=None` writes PDF and PNG. Supplying both an extension and `formats`, an empty format list, or a Matplotlib `format` override raises `ValueError`. Missing parent directories are created; backend and filesystem errors propagate. Exports are sequential, so a later failure can leave earlier files on disk.
+An omitted `fig` requires an open figure; otherwise saving raises `ValueError`. Invalid explicit figures raise `TypeError`. An extension selects one format; an extensionless path defaults to PDF and PNG. Conflicting or empty format selections raise `ValueError`.
+
+Missing directories are created. Backend and filesystem errors propagate; a later export failure may leave earlier files on disk.
 
 ```python
 paths = hdg.plots.save("figures/result.pdf", bbox_inches=None)
@@ -158,23 +225,7 @@ lightgbm.plot_importance(model, importance_type="gain")
 hdg.plots.show()
 ```
 
-Finishing expands an untouched default canvas for a single horizontal bar plot with at least six categories: width is at least 4.76 inches and height is at least `min(12, 0.26 * categories + 1)` inches. Categorical image/heatmap axes, including an attached colourbar, use a minimum 4.76 × 4.12-inch canvas. Default single-panel figures with axis titles longer than 90% of the corresponding canvas dimension receive the same space. Numeric matrix ticks alone do not request expansion. It preserves explicitly supplied sizes, subsequent resizing, multi-panel figures, data and axis limits. Very long labels or exceptionally many categories may still require an explicit canvas.
-
-SHAP plots normally display internally. Pass `show=False` so Hedgehogs can finish the figure before display. SHAP's own canvas sizes and explicit font choices are retained.
-
-```python
-shap.summary_plot(shap_values, X, show=False)
-hdg.plots.show()
-
-shap.dependence_plot("Age", shap_values, X, show=False)
-hdg.plots.show()
-```
-
-The same sequence applies to Matplotlib-backed `shap.plots.bar`, `beeswarm` and `waterfall`. SHAP's HTML force plots use a separate browser renderer. Hedgehogs does not recolour SHAP's feature-value maps or replace its attribution semantics; select a suitable map in the SHAP call when needed. These libraries remain optional dependencies.
-
-For one sample, `shap.force_plot(..., matplotlib=True, show=False)` produces a Matplotlib figure that can be finished with `hdg.plots.show()`. Multi-sample force plots remain interactive HTML: use `shap.initjs()` in a JavaScript-capable notebook and `shap.save_html()` for standalone output. Notebook trust and viewer restrictions still apply; `hdg.plots.show()` does not render HTML objects.
-
-Raw floating-point labels at horizontal bar endpoints are shortened to four significant digits when their text is exactly the unformatted bar width and exceeds ten characters. Custom formatted strings and explicitly sized text retain their content; bar values are unchanged.
+Finishing may enlarge an implicit canvas for dense horizontal bars, categorical heatmaps or long axis titles. Explicit sizes, resized canvases, grids, data and limits are preserved. See [Canvas expansion](../developer/presentation.md#default-canvas-fitting) for thresholds.
 
 ### Other scientific libraries
 
@@ -196,4 +247,4 @@ hdg.plots.show()
 
 For Seaborn figure-level plots, pass the returned figure when selecting one among several open figures: `hdg.plots.show(grid.figure)`. Native facet, joint and clustered layouts retain their explicitly selected canvas geometry. External colour maps and statistical annotations remain library-owned.
 
-Representative checks cover Seaborn heatmap, box, violin, facet, joint, cluster and pair grids; scikit-learn confusion matrices, ROC/PR, prediction errors and partial dependence; pandas grouped bars, dates and secondary axes; and statsmodels Q–Q, ACF and PACF. This is tested coverage rather than a guarantee for every library version or plot type. Exceptionally long labels and large category counts can still require an explicit canvas.
+Checks cover representative Seaborn, scikit-learn, pandas and statsmodels plots. Compatibility depends on library versions and plot types. Very long labels or large category counts may need an explicit canvas.
