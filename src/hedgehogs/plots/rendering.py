@@ -198,8 +198,10 @@ class _FigureStyle:
         return factors
 
     def apply(self, figure: Any, renderer=None) -> None:
-        # Tight export temporarily crops bbox_inches. transFigure retains the
-        # original canvas scale, so cropping must not trigger another resize.
+        # The preliminary export draw has already fitted the full canvas.
+        # A tight crop must retain those sizes, including fitted titles.
+        if figure.transFigure._boxout is not figure.bbox:
+            return
         transform = figure.transFigure.get_matrix()
         width, height = transform[0, 0] / figure.dpi, transform[1, 1] / figure.dpi
         figure_factor = min(width / self.reference_size[0], height / self.reference_size[1])

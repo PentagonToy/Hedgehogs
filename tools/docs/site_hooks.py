@@ -79,7 +79,7 @@ def on_page_markdown(markdown, page, config, files):
         query = url.query
         if local.endswith('.svg') and not query:
             query = 'revision=' + hashlib.sha256(Path(target_file.abs_src_path).read_bytes()).hexdigest()[:12]
-        result = target_file.url_relative_to(page.file) if html else posixpath.relpath(local, posixpath.dirname(page.file.src_uri) or '.')
+        result = posixpath.relpath(local, posixpath.dirname(page.file.src_uri) or '.')
         return result + (f'?{query}' if query else '') + (f'#{url.fragment}' if url.fragment else '')
 
     markdown = re.sub(r'(\]\()([^\s)]+)(\))', lambda m: m[1] + resolve(m[2]) + m[3], markdown)

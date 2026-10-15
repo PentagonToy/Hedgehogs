@@ -2,6 +2,8 @@
 
 ## 0.0.2 - Unreleased
 
+- Preserve fitted title sizes during tight exports to prevent clipped text. Increase the default title padding from 6 to 7 pt.
+
 - Align default single-panel vertical colour bars with the resolved plotting-box height.
 
 - Add `figures.square()` to fit square axes boxes inside the available layout space without resizing the canvas.

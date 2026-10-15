@@ -133,7 +133,7 @@ def set_style(
         "axes.labelpad":         6.0 * s,
         "axes.xmargin":          _DATA_MARGIN,
         "axes.ymargin":          _DATA_MARGIN,
-        "axes.titlepad":         6.0 * s,
+        "axes.titlepad":         7.0 * s,
         "axes.formatter.useoffset":    False,
         "axes.formatter.use_mathtext": True,
         "axes.formatter.limits":       [-4, 5],

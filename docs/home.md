@@ -1,5 +1,6 @@
-<div class="hedgehogs-logo">
-  <img src="../others/assets/icon.svg" alt="Hedgehogs symbol" width="210">
+<div class="hedgehogs-banner">
+  <img src="../others/assets/banner_light.svg#gh-light-mode-only" alt="Hedgehogs" width="960">
+  <img src="../others/assets/banner_dark.svg#gh-dark-mode-only" alt="Hedgehogs" width="960">
 </div>
 
 # Scientific figures and reports

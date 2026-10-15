@@ -37,7 +37,9 @@ jobs:
       - name: Install documentation dependencies
         run: python -m pip install -r requirements-docs.txt
       - name: Build documentation
-        run: python -m mkdocs build --strict
+        run: python tools/docs/build.py --workspace "$RUNNER_TEMP/hedgehogs-docs" --site-dir site
+      - name: Check generated documentation
+        run: python tools/docs/check_site.py site
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site

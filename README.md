@@ -1,10 +1,9 @@
-# Hedgehogs
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/banner_dark.svg">
+  <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/banner_light.svg" alt="Hedgehogs" width="960">
+</picture>
 
-<p align="center">
-  <a href="https://github.com/PentagonToy/Hedgehogs/blob/main/others/assets/icon.svg">
-    <img src="https://raw.githubusercontent.com/PentagonToy/Hedgehogs/main/others/assets/icon.svg?revision=e1685b8d6c95" alt="Hedgehogs symbol with blue accents" width="270">
-  </a>
-</p>
+# Hedgehogs
 
 **Scientific figures and reports for Python.**
 

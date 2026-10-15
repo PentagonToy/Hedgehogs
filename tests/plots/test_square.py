@@ -53,6 +53,33 @@ def test_grid_with_colourbar_and_constrained_layout(tmp_path):
     assert all(ax.get_box_aspect() is None for ax in axes)
 
 
+@pytest.mark.parametrize('extension', ['png', 'svg', 'pdf'])
+def test_square_title_stays_inside_tight_export(extension, tmp_path):
+    width, height = hdg.figsize(name='science', column='single')
+    fig, ax = plt.subplots(figsize=(width * 1.5, height * 1.5))
+    ax.scatter([8, 10, 12, 14], [4, 7, 10, 13], label='Red')
+    ax.scatter([9, 11, 13, 15], [5, 6, 8, 9], label='White')
+    ax.set(title='Wine Dataset: Original Features', xlabel='alcohol', ylabel='fixed acidity')
+    ax.legend()
+    fig.tight_layout()
+    hdg.figures.square()
+    cropped_bounds = []
+
+    def inspect(event):
+        if fig.transFigure._boxout is not fig.bbox:
+            cropped_bounds.append((ax.title.get_window_extent(event.renderer).frozen(), fig.bbox.frozen()))
+
+    fig.canvas.mpl_connect('draw_event', inspect)
+    hdg.plots.save(tmp_path / f'wine.{extension}', dpi=300, transparent=True)
+    assert cropped_bounds
+    for title, canvas in cropped_bounds:
+        assert title.x0 >= canvas.x0 - 1
+        assert title.x1 <= canvas.x1 + 1
+        assert title.y1 <= canvas.y1 + 1
+    hdg.plots.show(block=False)
+    assert ax.bbox.width == pytest.approx(ax.bbox.height)
+
+
 def test_invalid_flag_does_not_create_axes():
     with pytest.raises(TypeError):hdg.figures.square('yes')
     assert not plt.get_fignums()
