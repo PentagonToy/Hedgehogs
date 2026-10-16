@@ -11,7 +11,13 @@ SHAP-value drawings and SHAP integration have a separate [SHAP reference](shap.m
 | `hdg.plots.tree(...)` | Draw a fitted decision tree | `list[Annotation]` |
 | `hdg.plots.pairplot(...)` | Compare numeric variables by category | `(Figure, axes)` |
 | `hdg.plots.decision_regions(...)` | Draw two-feature classification regions and samples | `Axes` |
-| `hdg.plots.legend(...)` | Place the current axes legend inside or outside | `Legend` |
+| `hdg.plots.label(...)` | Add or update panel labels with optional halos and boxes | `list[Text]` |
+| `hdg.plots.square(...)` | Set or release square plotting boxes | `None` |
+| `hdg.plots.annotate_panels(...)` | Place explicit panel annotations | `None` |
+| `hdg.plots.style_colorbar(...)` | Style a colour bar | `None` |
+| `hdg.plots.apply_grid(...)` | Add a major grid | `None` |
+| `hdg.plots.enable_minor_ticks(...)` | Add minor tick locators | `None` |
+| `hdg.plots.legend(...)` | Place a panel or shared legend inside or outside | `Legend` |
 | `hdg.plots.show(...)` | Finish and display figures | `None` |
 | `hdg.plots.save(...)` | Finish and save the current or selected figure | `tuple[Path, ...]` |
 
@@ -88,7 +94,7 @@ hdg.plots.tree(dt, feature_names=["length", "width"], max_depth=3)
 hdg.plots.save("decision_tree.pdf")
 ```
 
-Branch labels have no background fill. Connectors leave a measured gap around `True` and `False`, preserving transparent exports without white label boxes.
+Branch labels preserve transparent exports.
 
 ## `plots.pairplot`
 
@@ -126,12 +132,94 @@ hdg.plots.save("iris_pairs.pdf", fig=fig)
 
 The outer y labels identify row variables. Diagonal curves use hidden density axes: their heights cannot be read from the outer ticks or compared across diagonal panels. Use separate, labelled density plots for quantitative reporting.
 
-## `plots.legend`
-
-Place a legend for the current axes, using Hedgehogs style defaults.
+## `plots.label`
 
 ```python
-hdg.plots.legend(loc="best", domain="inside", ncol=1)
+hdg.plots.label(
+    labels=None, *, bullets="a", axes=None, loc="upper left",
+    halo=True, box=False, color=None, fontsize=None, fontweight="bold",
+)
+```
+
+Add one label per visible panel, excluding colour bars. Accept a single axes or nested grid without flattening. Repeated calls update the labels and return editable text artists.
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `labels` | `None` | Panel names; omitted names show bullets only |
+| `bullets` | `"a"` | `a)`, `b)`, …; `"1"` gives numbers; `None` preserves literal labels |
+| `axes` | `None` | Current figure panels, or explicit axes/grid in display order |
+| `loc` | `"upper left"` | Upper, centre or lower position, such as `"lower right"` |
+| `halo` | `True` | Contrasting text outline |
+| `box` | `False` | Borderless, translucent white background; independent of `halo` |
+| `color` | `None` | Automatic black/white contrast, or an explicit Matplotlib colour |
+| `fontsize` | `None` | Shared typography, or an explicit positive point size |
+| `fontweight` | `"bold"` | Matplotlib font weight |
+
+Automatic contrast includes the axes background, images and optional box. Set `color` for complex backgrounds. Supply one name per selected panel; invalid counts raise `ValueError`.
+
+```python
+hdg.plots.label(["Data", "AND", "OR", "NAND"], halo=True, box=False)
+hdg.plots.show()
+
+# Box without a halo; updates the existing labels
+hdg.plots.label(["Data", "AND", "OR", "NAND"], halo=False, box=True)
+```
+
+## `plots.square`
+
+```python
+hdg.plots.square(enabled=True, *, ax=None) -> None
+```
+
+Make plotting boxes square without changing `figsize` or requesting equal data units. Resizing refits them within the available space.
+
+By default, select all current-figure panels except colour bars. Pass `ax` to select one panel or an axes grid. `False` clears the constraint; other non-boolean values raise `TypeError`. Existing data-aspect settings remain active.
+
+```python
+hdg.plots.square()                 # All panels
+hdg.plots.square(ax=axes[0, 0])     # One panel
+hdg.plots.square(False)            # Release all panels
+```
+
+Default single-panel vertical colour bars follow the plotting-box height. Custom placement, shared or horizontal bars and extension markers retain Matplotlib behaviour.
+
+## Other adjustments
+
+Adjust existing axes and colour bars without changing the plotted data.
+
+```python
+hdg.plots.annotate_panels(
+    axes, labels=None, loc="upper left", offset=None,
+    fontsize=None, fontweight="bold",
+)
+hdg.plots.style_colorbar(cb, label=None)
+hdg.plots.apply_grid(ax=None, axis="both")
+hdg.plots.enable_minor_ticks(ax=None, x=True, y=True)
+```
+
+| Helper | Parameters and defaults | Behaviour |
+| --- | --- | --- |
+| `annotate_panels()` | Required `axes`; `labels=None` generates `(a)`, `(b)`, …; `loc="upper left"`; `offset=None`; `fontsize=None` uses the current font size; `fontweight="bold"` | Place labels in axes coordinates; `offset=(x, y)` overrides placement, and `loc` selects left or right alignment |
+| `style_colorbar()` | Required `cb`; `label=None` preserves the existing label | Apply configured outline and tick styling |
+| `apply_grid()` | `ax=None` selects current axes; `axis="both"` accepts `x`, `y`, or `both` | Add a dotted major grid beneath the plotted data |
+| `enable_minor_ticks()` | `ax=None` selects current axes; `x=True`, `y=True` | Install automatic minor locators for linear axes |
+
+All four helpers return `None` and edit existing artists. Supply one label per panel.
+
+```python
+hdg.plots.annotate_panels(axes)
+hdg.plots.apply_grid(axes[0, 0], axis="y")
+hdg.plots.show(fig)
+```
+
+Use `plots.show()` or `plots.save()` for automatic finishing. Custom tick formatting remains a Matplotlib choice.
+
+## `plots.legend`
+
+Place a legend for the current axes or share one across panels.
+
+```python
+hdg.plots.legend(loc="best", domain="inside", ncol=1, *, shared=False, title=None)
 ```
 
 | Parameter | Default | Meaning |
@@ -139,14 +227,19 @@ hdg.plots.legend(loc="best", domain="inside", ncol=1)
 | `loc` | `"best"` | Matplotlib location name or code |
 | `domain` | `"inside"` | `inside` (`in`, `i`) or `outside` (`out`, `o`) |
 | `ncol` | `1` | Positive column count |
+| `shared` | `False` | Collect unique labels across visible panels in the current figure, excluding colour bars |
+| `title` | `None` | Title centred above the entries, for any column count |
 
-Inside placement follows `plt.legend()`. Outside, `upper` locations sit above the title, `lower` locations below the x label, and `center left/right` beside the axis labels. Outside `best` selects the right side; `center` has no outside meaning.
+Returns an editable `Legend`. Outside `upper` and `lower` locations clear titles and labels; `center left/right` sit beside them. Outside `best` selects the right side; `center` is invalid. Placement follows resizing; an explicit `bbox_to_anchor` takes control.
 
-Returns an editable `Legend`. Outside placement follows resizing and label edits. Set its `bbox_to_anchor` explicitly to take over placement.
+`shared=True` deduplicates labels in panel order and centres on the panel grid. Marker styles follow the plotted data. Conflicting styles warn and use the first; existing panel legends remain. Single-panel figures also work.
 
 ```python
-plt.plot(x, y, label="Model")
-hdg.plots.legend(loc="lower center", domain="outside", ncol=3)
+# Current panel
+hdg.plots.legend(loc="upper right")
+
+# Common legend above all panels
+hdg.plots.legend(loc="upper center", domain="outside", ncol=2, shared=True, title="Output")
 hdg.plots.show()
 ```
 

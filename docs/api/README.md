@@ -4,10 +4,12 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 
 ## Public namespace
 
+Configure shared defaults with `set_style()` and `figsize()`. Draw, adjust, display and save individual figures through `plots`.
+
 | Group | Public names | Purpose |
 | --- | --- | --- |
 | Figure settings | `set_style`, `reset_style`, `figsize` | Configure style and read canvas dimensions |
-| Figure helpers | `figures.annotate_panels`, `figures.style_colorbar`, `figures.apply_grid`, `figures.enable_minor_ticks`, `figures.square` | Explicitly adjust existing axes and panels |
+| Figure helpers | `plots.label`, `plots.square`, `plots.annotate_panels`, `plots.style_colorbar`, `plots.apply_grid`, `plots.enable_minor_ticks` | Label and adjust existing axes and panels |
 | General plots | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` | Draw, finish and save figures |
 | SHAP visualisation | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` | Draw supplied feature attributions |
 | Palettes | `Palette`, `get_palette`, `build_color_map`, `build_style_map`, `register_palette`, `save_palette`, `load_palette` | Select and map colours |
@@ -19,8 +21,8 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 
 | Task | Reference | Main API |
 | --- | --- | --- |
-| Style and size figures | [Figures](figures.md) | `set_style`, `figsize`, `figures.*` |
-| Draw, finish and save plots | [Plots](plots.md) | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` |
+| Configure figure defaults | [Figures](figures.md) | `set_style`, `reset_style`, `figsize` |
+| Draw, label and output plots | [Plots](plots.md) | `plots.label`, `plots.square`, `plots.legend`, `plots.show`, `plots.save` |
 | Draw or finish SHAP explanations | [SHAP visualisation](shap.md) | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` |
 | Select colours or define series styles | [Palettes](palettes.md) | `get_palette`, `build_style_map`, `register_palette` |
 | Format and export results | [Tables](tables.md) | `Table` |
@@ -30,6 +32,8 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 
 API indices summarise purpose and return values. Signatures show keyword-only options after `*`; parameter tables describe defaults and constraints. `None` requests the documented inference or disables an optional behaviour. Paths accept `str` and `os.PathLike`.
 
-Figures and artists remain editable. `Table` and `Progress` update their state in place. Figure style affects global Matplotlib settings until `reset_style()` restores them. `EPS` equals `sys.float_info.epsilon`; it supplies a floating-point constant rather than a universal numerical tolerance.
+Figures remain editable. `set_style()` affects Matplotlib until `reset_style()` restores it. `EPS` equals `sys.float_info.epsilon`.
 
 Read the [documentation roadmap](../README.md) for guides and tutorials, and [implementation ownership](../developer/architecture.md) for lifecycle and extension rules.
+
+The former `hdg.figures` helper paths remain available for existing notebooks; new code uses `hdg.plots`.

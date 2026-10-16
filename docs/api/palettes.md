@@ -119,4 +119,4 @@ hdg.load_palette(path, *, name=None, overwrite=False) -> Palette
 
 `save_palette()` writes `name`, `names` and `colors` to JSON and returns its path. `load_palette()` registers the file and returns a `Palette`; its name comes from an explicit `name`, the JSON name or the file stem, in that order.
 
-See the [figure guide](figures.md) for styling and export.
+See [Figures](figures.md) for styling and [Plots](plots.md) for export.

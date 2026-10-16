@@ -30,7 +30,6 @@ __all__ = [
     "set_style",
     "reset_style",
     "figsize",
-    "figures",
     "plots",
     "Table",
     "Progress",

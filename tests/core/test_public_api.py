@@ -10,7 +10,7 @@ def test_public_api():
     expected = [
         "EPS", "Palette", "get_palette", "build_color_map", "build_style_map",
         "register_palette", "save_palette", "load_palette", "set_style",
-        "reset_style", "figsize", "figures", "plots", "Table", "Progress",
+        "reset_style", "figsize", "plots", "Table", "Progress",
         "echo", "rule", "info",
     ]
 
@@ -30,9 +30,9 @@ def test_plotting_api():
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1], color=palette[0])
 
-    hdg.figures.enable_minor_ticks(ax)
-    hdg.figures.apply_grid(ax)
-    hdg.figures.annotate_panels([ax])
+    hdg.plots.enable_minor_ticks(ax)
+    hdg.plots.apply_grid(ax)
+    hdg.plots.annotate_panels([ax])
 
     plt.close(fig)
     hdg.reset_style()
@@ -61,7 +61,7 @@ def test_progress_api():
 
 
 def test_specialised_plots_have_one_public_namespace():
-    assert hdg.plots.__all__ == ["tree", "pairplot", "decision_regions", "legend", "force_plot", "summary_plot", "waterfall_plot", "dependence_plot", "decision_plot", "show", "save"]
+    assert hdg.plots.__all__ == ["tree", "pairplot", "decision_regions", "legend", "force_plot", "summary_plot", "waterfall_plot", "dependence_plot", "decision_plot", "show", "save", "annotate_panels", "style_colorbar", "apply_grid", "enable_minor_ticks", "square", "label"]
     assert callable(hdg.plots.legend)
     assert callable(hdg.plots.decision_regions)
     assert callable(hdg.plots.tree)
@@ -92,11 +92,17 @@ def test_public_introspection_is_clean_and_describes_new_interfaces():
 
 def test_figure_helpers_have_one_namespace_without_removed_wrappers():
     expected = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks', 'square']
-    assert hdg.figures.__all__ == expected
-    assert dir(hdg.figures) == sorted(expected)
+    assert set(expected) <= set(hdg.plots.__all__)
+    assert dir(hdg.plots) == sorted(hdg.plots.__all__)
     for name in expected:
-        assert callable(getattr(hdg.figures, name))
+        assert callable(getattr(hdg.plots, name))
         assert not hasattr(hdg, name)
     for name in ['subplots', 'journal_preset', 'set_journal_style', 'finalize']:
         assert not hasattr(hdg, name)
-        assert not hasattr(hdg.figures, name)
+        assert not hasattr(hdg.plots, name)
+
+
+def test_legacy_figure_helpers_forward_to_plots():
+    for name in hdg.figures.__all__:
+        assert getattr(hdg.figures, name) is getattr(hdg.plots, name)
+    assert 'figures' not in hdg.__all__

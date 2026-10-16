@@ -13,8 +13,8 @@ Hedgehogs prepares Matplotlib figures and presents tables, progress and status m
 
 | Task | Start here |
 | --- | --- |
-| Set figure dimensions, typography and helpers | [Figures](api/figures.md) |
-| Finish, display or save a plot | [Plots](api/plots.md) |
+| Set figure dimensions and typography | [Figures](api/figures.md) |
+| Draw, label, adjust or output a plot | [Plots](api/plots.md) |
 | Choose colours and series styles | [Palettes](api/palettes.md) |
 | Report values and export tables | [Tables](api/tables.md) |
 | Show progress and terminal messages | [Terminal and progress](api/terminal.md) |

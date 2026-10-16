@@ -173,6 +173,10 @@ def refine_presentation(figure, state, annotations) -> None:
         for title in (ax.title, ax._left_title, ax._right_title):
             font(title, points(plt.rcParams['axes.titlesize']),
                  points(plt.rcParams['axes.titlesize']) * factor)
+        for text in ax.texts:
+            if getattr(text, '_hedgehogs_panel_label', False):
+                font(text, points(plt.rcParams['font.size']),
+                     points(plt.rcParams['font.size']) * factor)
         value_factor = min(factor, FINISH_MAX_ANNOTATION_SCALE) if dense else max(1., factor * .9)
         for text in value_labels:
             font(text, points(plt.rcParams['font.size']),
@@ -221,7 +225,7 @@ def refine_presentation(figure, state, annotations) -> None:
             for text in legend.get_texts():
                 font(text, expected, expected * factor)
             title_size = plt.rcParams['legend.title_fontsize']
-            title_size = expected if title_size is None else points(title_size)
+            title_size = points(plt.rcParams['font.size']) if title_size is None else points(title_size)
             font(legend.get_title(), title_size, title_size * factor)
             properties = state.values.setdefault(legend, {})
             key = 'finish_role.legend_fontsize'
@@ -230,3 +234,23 @@ def refine_presentation(figure, state, annotations) -> None:
                 if managed(legend, 'legend_fontsize', legend._fontsize, expected, expected * factor):
                     legend._fontsize = expected * factor
                     properties['legend_fontsize'] = ((expected * factor,), (expected * factor,), 1.)
+
+    for legend in figure.legends:
+        if not hasattr(legend, '_hedgehogs_sources'):
+            continue
+        panel_factors = [state.values.get(ax, {}).get('finish_panel_scale', (None, 1.))[1]
+                         for ax in legend._panels if ax in axes]
+        factor = min(panel_factors, default=1.)
+        outlines = [state.values.get(ax, {}).get('finish_outline_scale', (None, 1.6))[1]
+                    for ax in legend._panels if ax in axes]
+        stroke(legend.get_frame(), 'linewidth', float(plt.rcParams['patch.linewidth']),
+               min(outlines, default=1.6))
+        expected = points(plt.rcParams['legend.fontsize'])
+        for text in legend.get_texts():
+            font(text, expected, expected * factor)
+        title_size = plt.rcParams['legend.title_fontsize']
+        title_size = points(plt.rcParams['font.size']) if title_size is None else points(title_size)
+        font(legend.get_title(), title_size, title_size * factor)
+        if managed(legend, 'legend_fontsize', legend._fontsize, expected, expected * factor):
+            legend._fontsize = expected * factor
+            state.values.setdefault(legend, {})['legend_fontsize'] = ((expected * factor,), (expected * factor,), 1.)

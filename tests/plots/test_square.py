@@ -19,7 +19,7 @@ def test_square_fits_allocated_space_preserves_canvas_and_limits(size, tmp_path)
     fig, ax = plt.subplots(figsize=size)
     ax.plot([0, 10], [0, 1])
     ax.set(xlim=(-1, 11), ylim=(-.1, 1.1), xlabel='Long axis title', ylabel='Value')
-    hdg.figures.square()
+    hdg.plots.square()
     fig.canvas.draw()
     allocated = ax.get_position(original=True)
     capacity = min(allocated.width * size[0], allocated.height * size[1])
@@ -34,7 +34,7 @@ def test_square_fits_allocated_space_preserves_canvas_and_limits(size, tmp_path)
     fig.set_size_inches(size[::-1])
     hdg.plots.show(block=False)
     assert ax.bbox.width == pytest.approx(ax.bbox.height)
-    hdg.figures.square(False)
+    hdg.plots.square(False)
     assert ax.get_box_aspect() is None
 
 
@@ -43,13 +43,13 @@ def test_grid_with_colourbar_and_constrained_layout(tmp_path):
     image = axes[0].imshow(np.arange(12).reshape(3, 4), aspect='auto')
     fig.colorbar(image, ax=axes[0])
     axes[1].plot([0, 10], [0, 1])
-    hdg.figures.square(ax=axes)
+    hdg.plots.square(ax=axes)
     hdg.plots.show(block=False)
     for ax in axes:
         assert ax.bbox.width == pytest.approx(ax.bbox.height)
     assert fig.axes[-1].get_box_aspect() != 1
     fig.savefig(tmp_path / 'grid.pdf')
-    hdg.figures.square(False, ax=axes)
+    hdg.plots.square(False, ax=axes)
     assert all(ax.get_box_aspect() is None for ax in axes)
 
 
@@ -62,7 +62,7 @@ def test_square_title_stays_inside_tight_export(extension, tmp_path):
     ax.set(title='Wine Dataset: Original Features', xlabel='alcohol', ylabel='fixed acidity')
     ax.legend()
     fig.tight_layout()
-    hdg.figures.square()
+    hdg.plots.square()
     cropped_bounds = []
 
     def inspect(event):
@@ -80,8 +80,38 @@ def test_square_title_stays_inside_tight_export(extension, tmp_path):
     assert ax.bbox.width == pytest.approx(ax.bbox.height)
 
 
+def test_square_defaults_to_current_figure_panels_and_skips_colourbars():
+    _, other = plt.subplots()
+    fig, axes = plt.subplots(2, 2, figsize=(6, 5), sharex=True, sharey=True)
+    for ax in axes.flat:
+        points = ax.scatter([0, 1], [0, 1], c=[0, 1])
+    bar = fig.colorbar(points, ax=axes.ravel().tolist())
+    original_bar_aspect = bar.ax.get_box_aspect()
+    plt.sca(bar.ax)
+    hdg.plots.square()
+    fig.canvas.draw()
+    for ax in axes.flat:
+        assert ax.get_box_aspect() == 1
+        assert ax.bbox.width == pytest.approx(ax.bbox.height)
+    assert bar.ax.get_box_aspect() == original_bar_aspect
+    assert other.get_box_aspect() is None
+    hdg.plots.square(False)
+    assert all(ax.get_box_aspect() is None for ax in axes.flat)
+    assert bar.ax.get_box_aspect() == original_bar_aspect
+
+
+def test_square_explicit_selection_leaves_other_panels_unchanged():
+    _, axes = plt.subplots(2, 2)
+    hdg.plots.square(ax=axes[0])
+    assert all(ax.get_box_aspect() == 1 for ax in axes[0])
+    assert all(ax.get_box_aspect() is None for ax in axes[1])
+    hdg.plots.square(False, ax=axes[0, 0])
+    assert axes[0, 0].get_box_aspect() is None
+    assert axes[0, 1].get_box_aspect() == 1
+
+
 def test_invalid_flag_does_not_create_axes():
-    with pytest.raises(TypeError):hdg.figures.square('yes')
+    with pytest.raises(TypeError):hdg.plots.square('yes')
     assert not plt.get_fignums()
 
 
@@ -90,7 +120,7 @@ def test_square_dependence_colourbar_matches_parent_after_finish_resize_export(s
     fig = plt.figure(figsize=(2.24 * scale, 2.2))
     values = np.array([[1, 2], [2, 3], [3, 4]])
     ax = hdg.plots.dependence_plot(0, values, [[10, 0], [20, 1], [30, 0]], color_by=1)
-    hdg.figures.square()
+    hdg.plots.square()
     bar = fig.axes[1]
     hdg.plots.show(block=False)
     assert (bar.bbox.y0, bar.bbox.y1) == pytest.approx((ax.bbox.y0, ax.bbox.y1))

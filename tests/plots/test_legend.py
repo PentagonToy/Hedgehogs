@@ -87,3 +87,154 @@ def test_invalid_options_do_not_create_figures(kwargs):
     with pytest.raises(ValueError):
         hdg.plots.legend(**kwargs)
     assert not plt.get_fignums()
+
+
+@pytest.mark.parametrize('layout', [None, 'constrained'])
+def test_shared_outside_centres_on_panels_and_survives_export(layout, tmp_path):
+    from matplotlib.transforms import Bbox
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fig, axes = plt.subplots(2, 2, figsize=(5, 5), sharex=True, sharey=True, layout=layout)
+    for ax in axes.flat:
+        ax.scatter([0, 1], [0, 1], color='blue', label='1')
+        ax.scatter([.2, .8], [.8, .2], color='red', label='0')
+    axes[0, 0].set_ylabel('Long left-hand label')
+    hdg.plots.square()
+    result = hdg.plots.legend('upper center', 'outside', 2, shared=True)
+    assert result in fig.legends
+    assert all(ax.get_legend() is None for ax in axes.flat)
+    assert [text.get_text() for text in result.get_texts()] == ['1', '0']
+    for size in [(5, 5), (6, 4)]:
+        fig.set_size_inches(size)
+        prepare(fig)
+        renderer = fig.canvas.get_renderer()
+        panels = Bbox.union([ax.bbox for ax in axes.flat])
+        box = result.get_window_extent(renderer)
+        assert (box.x0 + box.x1) / 2 == pytest.approx((panels.x0 + panels.x1) / 2)
+        assert box.y0 > max(ax.get_tightbbox(renderer, bbox_extra_artists=[]).y1 for ax in axes.flat)
+        assert box.y1 <= fig.bbox.y1 + 1
+        handles = getattr(result, 'legend_handles', None)
+        if handles is None:
+            handles = result.legendHandles
+        assert list(handles[0].get_linewidth()) == list(axes[0, 0].collections[0].get_linewidth())
+        for ext in ['png', 'svg', 'pdf']:
+            hdg.plots.save(tmp_path / f'shared.{ext}', fig=fig)
+    replacement = hdg.plots.legend('lower center', 'outside', 2, shared=True)
+    assert fig.legends == [replacement]
+
+
+@pytest.mark.parametrize('domain', ['inside', 'outside'])
+def test_shared_single_panel_and_best_location(domain):
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fig, ax = plt.subplots(figsize=(4, 3))
+    ax.scatter([0, 1], [0, 1], label='Data')
+    result = hdg.plots.legend(shared=True, domain=domain)
+    prepare(fig)
+    assert [text.get_text() for text in result.get_texts()] == ['Data']
+    assert result.get_window_extent(fig.canvas.get_renderer()).width > 0
+
+
+def test_shared_conflicting_styles_warn_and_keep_first():
+    fig, axes = plt.subplots(1, 2)
+    axes[0].scatter([0], [0], color='blue', label='Data')
+    axes[1].scatter([0], [0], color='red', label='Data')
+    with pytest.warns(UserWarning, match='different styles'):
+        result = hdg.plots.legend(shared=True)
+    assert len(result.get_texts()) == 1
+    assert result._hedgehogs_sources == [axes[0].collections[0]]
+
+
+def test_shared_rejects_non_boolean_before_creating_figures():
+    with pytest.raises(TypeError, match='shared'):
+        hdg.plots.legend(shared='yes')
+    assert not plt.get_fignums()
+
+
+def test_shared_frame_matches_panel_legend_and_retains_explicit_edits(tmp_path):
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fig, axes = plt.subplots(2, 2, figsize=(4.48, 4.4))
+    for ax in axes.flat:
+        ax.scatter([0, 1], [0, 1], label='Data')
+    local = axes[0, 0].legend(loc='upper left')
+    shared = hdg.plots.legend('upper center', 'outside', shared=True)
+    prepare(fig)
+    expected = local.get_frame().get_linewidth()
+    assert expected > plt.rcParams['patch.linewidth']
+    assert shared.get_frame().get_linewidth() == pytest.approx(expected)
+    hdg.plots.save(tmp_path / 'frame.png', fig=fig)
+    prepare(fig)
+    assert shared.get_frame().get_linewidth() == pytest.approx(expected)
+    shared.get_frame().set_linewidth(2.7)
+    prepare(fig)
+    assert shared.get_frame().get_linewidth() == pytest.approx(2.7)
+
+
+def test_shared_single_panel_typography_matches_local_legend():
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fonts = []
+    for shared in [False, True]:
+        fig, ax = plt.subplots(figsize=(5, 4))
+        ax.scatter([0, 1], [0, 1], label='Data')
+        result = hdg.plots.legend('upper left', shared=shared)
+        prepare(fig)
+        fonts.append(result.get_texts()[0].get_fontsize())
+    assert fonts[0] == pytest.approx(fonts[1])
+
+
+def test_shared_excludes_hidden_panels_and_colourbars_and_preserves_anchor():
+    fig, axes = plt.subplots(1, 2)
+    image = axes[0].scatter([0, 1], [0, 1], c=[0, 1], label='Data')
+    fig.colorbar(image, ax=axes[0])
+    axes[1].plot([0, 1], label='Hidden')
+    axes[1].set_visible(False)
+    result = hdg.plots.legend('upper center', 'outside', shared=True)
+    assert [text.get_text() for text in result.get_texts()] == ['Data']
+    result.set_bbox_to_anchor((.5, .8), fig.transFigure)
+    before = result.get_bbox_to_anchor().bounds
+    fig.canvas.draw()
+    assert result.get_bbox_to_anchor().bounds == before
+
+
+@pytest.mark.parametrize('ncol', [1, 2, 3])
+@pytest.mark.parametrize('shared', [False, True])
+@pytest.mark.parametrize('domain', ['inside', 'outside'])
+def test_titles_are_centred_for_any_column_count(ncol, shared, domain):
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fig, ax = plt.subplots(figsize=(5, 4))
+    for index, name in enumerate(['One', 'A longer label', 'Three']):
+        ax.scatter([index], [index], label=name)
+    result = hdg.plots.legend('upper center', domain, ncol, shared=shared, title='Logic gate output')
+    for size in [(5, 4), (6, 4)]:
+        fig.set_size_inches(size)
+        prepare(fig)
+        renderer = fig.canvas.get_renderer()
+        title = result.get_title().get_window_extent(renderer)
+        frame = result.get_window_extent(renderer)
+        assert (title.x0 + title.x1) / 2 == pytest.approx((frame.x0 + frame.x1) / 2, abs=.5)
+        ratio = plt.rcParams['font.size'] / plt.rcParams['legend.fontsize']
+        assert result.get_title().get_fontsize() == pytest.approx(result.get_texts()[0].get_fontsize() * ratio)
+
+
+def test_multiline_title_stays_centred_through_exports(tmp_path):
+    from hedgehogs.plots.presentation import prepare
+    hdg.set_style()
+    fig, ax = plt.subplots(figsize=(5, 4))
+    ax.scatter([0, 1], [0, 1], label='Data')
+    result = hdg.plots.legend('upper center', 'outside', shared=True, title='Gate\noutput')
+    for ext in ['png', 'pdf', 'svg']:
+        hdg.plots.save(tmp_path / f'title.{ext}', fig=fig, transparent=True)
+    prepare(fig)
+    renderer = fig.canvas.get_renderer()
+    title = result.get_title().get_window_extent(renderer)
+    frame = result.get_window_extent(renderer)
+    assert (title.x0 + title.x1) / 2 == pytest.approx((frame.x0 + frame.x1) / 2, abs=.5)
+
+
+def test_invalid_title_does_not_create_figures():
+    with pytest.raises(TypeError, match='title'):
+        hdg.plots.legend(title=42)
+    assert not plt.get_fignums()

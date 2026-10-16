@@ -2,11 +2,19 @@
 
 ## 0.0.2 - Unreleased
 
+- Add centred titles to `plots.legend()` for panel and shared legends, with any column count.
+
+- Add `plots.label()` for panel names, alphabetic or numeric bullets, optional halos and translucent label boxes. Accept axes grids directly and update labels on repeated calls.
+
+- Add `plots.legend(shared=True)` for deduplicated common legends aligned with the panel grid. Preserve plotted marker outlines and reserve space for outside placement.
+
+- Unify drawing, figure adjustments and output under `plots`. Retain former `figures` helper paths as compatibility imports.
+
+- Apply `plots.square()` to all panels in the current figure by default, excluding colour bars. Retain `ax` for explicit panel selection.
+
 - Preserve fitted title sizes during tight exports to prevent clipped text. Increase the default title padding from 6 to 7 pt.
 
 - Align default single-panel vertical colour bars with the resolved plotting-box height.
-
-- Add `figures.square()` to fit square axes boxes inside the available layout space without resizing the canvas.
 
 - Add native attribution waterfall, dependence and decision plots with explicit ordering and preserved additive endpoints.
 
@@ -32,7 +40,7 @@
 
 - Stabilise rendering-hook lifetimes and temporary caches across reset, third-party wrappers and failed draws. Verify axes consistency across equivalent presentation requirements, repeated finishing and edits.
 
-- Move panel, colour-bar, grid and minor-tick helpers to `hdg.figures`. Remove the former top-level aliases, `subplots`, `journal_preset`, `set_journal_style` and `finalize`. Create axes with `plt.subplots()`, configure styles with `set_style(figure_size=figsize(...))`, and finish figures with `plots.show()` or `plots.save()`. Custom tick formatting remains with Matplotlib.
+- Remove the former top-level helper aliases, `subplots`, `journal_preset`, `set_journal_style` and `finalize`. Create axes with `plt.subplots()`, configure styles with `set_style(figure_size=figsize(...))`, and finish figures with `plots.show()` or `plots.save()`. Custom tick formatting remains with Matplotlib.
 
 ## 0.0.1 — 8 October 2026
 

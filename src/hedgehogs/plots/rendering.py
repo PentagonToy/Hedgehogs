@@ -272,6 +272,21 @@ class _FigureStyle:
                 self._fit_titles(figure, renderer)
             self._fit_legends(figure, renderer, factors, fallback)
             self._align_legends(figure, renderer)
+            for legend in figure.legends:
+                sources = getattr(legend, '_hedgehogs_sources', ())
+                handles = getattr(legend, 'legend_handles', None)
+                if handles is None:
+                    handles = legend.legendHandles
+                for source, handle in zip(sources, handles):
+                    names = ('linewidth', 'markeredgewidth', 'markersize') if isinstance(source, Line2D) and isinstance(handle, Line2D) else (
+                        ('linewidth',) if (isinstance(source, Collection) and isinstance(handle, Collection))
+                        or (isinstance(source, Patch) and isinstance(handle, Patch)) else ())
+                    for name in names:
+                        value = getattr(source, 'get_' + name)()
+                        getattr(handle, 'set_' + name)(value)
+                        key = 'linewidths' if name == 'linewidth' and isinstance(handle, Collection) else name
+                        widths = self._values(value)
+                        self.values.setdefault(handle, {})[key] = (widths, widths, 1.)
 
     def _fit_titles(self, figure: Any, renderer) -> bool:
         """Fit axes titles without changing their text or the physical canvas."""
@@ -372,6 +387,21 @@ class _FigureStyle:
                 if not legend.get_visible() or not legend.get_in_layout():
                     continue
                 bounds = legend.get_window_extent(renderer)
+                shared_domain = getattr(legend, '_shared_domain', None)
+                if shared_domain == 'inside':
+                    continue
+                placement = getattr(legend, '_shared_placement', None)
+                if placement is not None and legend._bbox_to_anchor is None:
+                    side = placement[1]
+                    if side == 'top':
+                        top = min(top, 1 - (bounds.height + 2 * margin) / figure.bbox.height)
+                    elif side == 'bottom':
+                        bottom = max(bottom, (bounds.height + 2 * margin) / figure.bbox.height)
+                    elif side == 'left':
+                        left = max(left, (bounds.width + 2 * margin) / figure.bbox.width)
+                    else:
+                        right = min(right, 1 - (bounds.width + 2 * margin) / figure.bbox.width)
+                    continue
                 if bounds.y1 <= figure.bbox.height * 0.25:
                     bottom = max(bottom, (bounds.y1 + margin) / figure.bbox.height)
                 elif bounds.y0 >= figure.bbox.height * 0.75:
