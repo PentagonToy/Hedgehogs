@@ -4,11 +4,11 @@ Hedgehogs configures scientific figures and presents results in notebooks and te
 
 ## Public namespace
 
-Configure shared defaults with `set_style()` and `figsize()`. Draw, adjust, display and save individual figures through `plots`.
+Configure shared defaults with `set_style()` and `figsize()`. Draw, adjust, display and save individual figures through `plots`. Align separate comparison figures with `figures.align(figures=[...])`.
 
 | Group | Public names | Purpose |
 | --- | --- | --- |
-| Figure settings | `set_style`, `reset_style`, `figsize` | Configure style and read canvas dimensions |
+| Figure settings | `set_style`, `reset_style`, `figsize`, `figures.align` | Configure style and read canvas dimensions |
 | Figure helpers | `plots.label`, `plots.square`, `plots.annotate_panels`, `plots.style_colorbar`, `plots.apply_grid`, `plots.enable_minor_ticks` | Label and adjust existing axes and panels |
 | General plots | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` | Draw, finish and save figures |
 | SHAP visualisation | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` | Draw supplied feature attributions |
@@ -21,7 +21,7 @@ Configure shared defaults with `set_style()` and `figsize()`. Draw, adjust, disp
 
 | Task | Reference | Main API |
 | --- | --- | --- |
-| Configure figure defaults | [Figures](figures.md) | `set_style`, `reset_style`, `figsize` |
+| Configure figure defaults | [Figures](figures.md) | `set_style`, `reset_style`, `figsize`, `figures.align` |
 | Draw, label and output plots | [Plots](plots.md) | `plots.label`, `plots.square`, `plots.legend`, `plots.show`, `plots.save` |
 | Draw or finish SHAP explanations | [SHAP visualisation](shap.md) | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` |
 | Select colours or define series styles | [Palettes](palettes.md) | `get_palette`, `build_style_map`, `register_palette` |
@@ -36,4 +36,4 @@ Figures remain editable. `set_style()` affects Matplotlib until `reset_style()` 
 
 Read the [documentation roadmap](../README.md) for guides and tutorials, and [implementation ownership](../developer/architecture.md) for lifecycle and extension rules.
 
-The former `hdg.figures` helper paths remain available for existing notebooks; new code uses `hdg.plots`.
+The former `hdg.figures` helper paths remain available for existing notebooks; new code uses `hdg.plots` for those helpers. Cross-figure alignment uses `hdg.figures.align`.

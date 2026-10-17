@@ -2,6 +2,10 @@
 
 ## 0.0.2 - Unreleased
 
+- Make `plots.show(fig=...)` display only the selected figure, preserving other figures and suppressing the pending Jupyter inline flush.
+
+- Add `figures.align(figures)` to match plotting boxes across same-sized single-panel figures before export.
+
 - Add centred titles to `plots.legend()` for panel and shared legends, with any column count.
 
 - Add `plots.label()` for panel names, alphabetic or numeric bullets, optional halos and translucent label boxes. Accept axes grids directly and update labels on repeated calls.

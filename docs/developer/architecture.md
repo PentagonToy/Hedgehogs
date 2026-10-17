@@ -15,7 +15,7 @@ Keep style configuration in `hedgehogs` and drawing, artist adjustments and outp
 | `plots/output.py` | Current-figure selection and multi-format saving |
 | `plots/helpers.py` | Explicit panel, colour-bar, grid, minor-tick and box-aspect adjustments |
 | `plots/label.py` | Editable panel labels, numbering and contrasting text outlines |
-| `figures.py` | Compatibility imports for former helper paths |
+| `figures.py` | Explicit cross-figure alignment and compatibility imports for former helper paths |
 | `core/palette.py` | Palette definitions and series styles |
 | `tables/table.py` | Formatted tables and exports |
 | `terminal/progress.py`, `terminal/output.py` | Progress and status output |

@@ -9,6 +9,7 @@ Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`.
 | `hdg.set_style(...)` | Configure global presentation defaults | `None` |
 | `hdg.reset_style()` | Restore Matplotlib defaults and methods | `None` |
 | `hdg.figsize(...)` | Read physical figure dimensions | `(width, height)` |
+| `hdg.figures.align(figures)` | Match plotting boxes across separate figures | `None` |
 
 ## Styling and layout
 
@@ -73,6 +74,30 @@ fig, axes = plt.subplots(2, 2, figsize=size, layout="constrained")
 ```
 
 Use Matplotlib's `gridspec_kw`, `sharex`, `sharey` and `layout` for panel geometry. For colour bars and nested axes, select `layout="constrained"`; `hdg.plots.square(ax=ax)` gives a square plotting box.
+
+## `figures.align`
+
+Match the position and physical size of plotting boxes across separate figures. Supply a list or tuple of at least two distinct Matplotlib figures with the same `figsize`.
+
+```python
+figures = []
+for values, title in [(Phi_gaussian, "Gaussian RBF"), (Phi_matern, "Matern C4 RBF"), (Phi_homemade, "Homemade C4 RBF")]:
+    fig, ax = plt.subplots(figsize=FIG_SIZE)
+    ax.plot(x_input, values)
+    ax.set(xlabel="x", ylabel="y", title=title)
+    figures.append(fig)
+
+hdg.figures.align(figures=figures)
+for fig, name in zip(figures, ["gaussian", "matern", "homemade"]):
+    hdg.plots.save(f"{name}.png", fig=fig, transparent=True)
+hdg.plots.show()
+```
+
+Each figure is finished before measuring its labels. Alignment shares the largest fitted margins, then checks for overflow with three points of outer clearance. It preserves canvas dimensions, data limits, ticks and palettes. PNG, PDF and SVG exports retain the common plotting box; tight cropping can still produce different outer file dimensions.
+
+The initial scope is one rectilinear panel per figure without fixed data or box aspect, colourbars, inset axes, figure-level text or figure legends. Unsupported inputs raise an error. If labels leave no common plotting area or fitting does not converge, increase `figsize` or simplify labels. Returns `None`.
+
+Align after adding data and labels, before saving. Earlier files are not updated. Reapply after changing content, layout or canvas size; resizing releases that figure's alignment. Alignment does not keep an implicit group or adjust figures outside the supplied sequence.
 
 ## Palettes
 

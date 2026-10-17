@@ -400,11 +400,38 @@ def prepare(fig: Figure) -> None:
 
 
 def show(fig: Figure | None = None, *, block: bool | None = None) -> None:
-    """Finish the selected figure (or all open figures), then display them."""
+    """Finish and display only fig, or all open figures when omitted."""
     if fig is not None:
         prepare(fig)
+        if 'matplotlib_inline' in str(plt.get_backend()).lower():
+            from IPython.display import display
+            from matplotlib_inline import backend_inline
+            display(fig)
+            # Suppress the cell-end flush without closing other managed figures.
+            setattr(backend_inline.show, '_to_draw', [])
+            setattr(backend_inline.show, '_draw_called', False)
+        else:
+            from matplotlib.backend_bases import NonGuiException
+            manager = fig.canvas.manager
+            if manager is None:
+                raise ValueError('Selected GUI figures must be created through pyplot.')
+            try:
+                manager.show()
+            except NonGuiException as exc:
+                warnings.warn(str(exc), UserWarning, stacklevel=2)
+                return
+            if block is None:
+                block = not plt.isinteractive() and not hasattr(plt.show, '_needmain')
+            if block:
+                # A global GUI loop can wait for unrelated, hidden windows.
+                canvas = fig.canvas
+                callback = canvas.mpl_connect('close_event', lambda event: canvas.stop_event_loop())
+                try:
+                    canvas.start_event_loop(timeout=0)
+                finally:
+                    canvas.mpl_disconnect(callback)
     else:
         from matplotlib._pylab_helpers import Gcf
         for manager in Gcf.get_all_fig_managers():
             prepare(manager.canvas.figure)
-    plt.show(block=block)
+        plt.show(block=block)
