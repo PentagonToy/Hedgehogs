@@ -350,6 +350,13 @@ class _FigureStyle:
         return fitted
 
     def _fit_layout(self, figure: Any, renderer) -> None:
+        aligned = getattr(figure, '_hedgehogs_aligned_layout', None)
+        if aligned is not None:
+            size, bounds = aligned
+            if tuple(figure.get_size_inches()) == size and len(figure.axes) == 1:
+                figure.axes[0].set_position(bounds)
+                return
+            del figure._hedgehogs_aligned_layout
         if getattr(figure, "_hedgehogs_finish_layout_locked", False):
             return
         # Measure labels at their final point sizes. Tight export temporarily

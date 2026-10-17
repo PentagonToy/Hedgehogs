@@ -245,7 +245,7 @@ hdg.plots.show()
 
 ## `plots.show`
 
-Finish complete figures, then display them through Matplotlib.
+Finish and display the selected figure, or all open figures when omitted.
 
 ```python
 hdg.plots.show(fig=None, *, block=None) -> None
@@ -253,10 +253,17 @@ hdg.plots.show(fig=None, *, block=None) -> None
 
 | Parameter | Default | Meaning |
 | --- | --- | --- |
-| `fig` | `None` | Figure to finish; `None` finishes all open figures |
+| `fig` | `None` | Figure to finish and display; `None` selects all open figures |
 | `block` | `None` | Matplotlib display mode: `True`, `False`, or the backend default (`None`) |
 
-Display follows `plt.show()`. Selecting `fig` limits finishing, although Matplotlib may display other windows. An invalid figure raises `TypeError`.
+With no selection, display follows `plt.show()`. With `fig`, only that figure is displayed; other figures are neither shown nor closed by the call. Already visible GUI windows stay visible. An invalid figure raises `TypeError`.
+
+In Jupyter inline mode, selected display suppresses the pending cell-end figure flush and keeps the figures available for later explicit display or saving. New plotting calls can schedule another automatic flush. `block` has no effect in inline mode. For GUI backends, `block=True` waits until the selected window closes; `False` returns immediately and requires the environment to process GUI events. The default follows interactive/IPython mode.
+
+```python
+hdg.plots.show(fig=fig_gaussian)
+hdg.plots.show(fig=fig_matern)
+```
 
 Finishing adjusts default typography, numeric ticks and supported bar-value labels. It preserves data, limits and explicit settings. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
 

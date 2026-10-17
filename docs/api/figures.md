@@ -9,6 +9,7 @@ Examples assume `import matplotlib.pyplot as plt` and `import hedgehogs as hdg`.
 | `hdg.set_style(...)` | Configure global presentation defaults | `None` |
 | `hdg.reset_style()` | Restore Matplotlib defaults and methods | `None` |
 | `hdg.figsize(...)` | Read physical figure dimensions | `(width, height)` |
+| `hdg.figures.align(figures)` | Match plotting boxes across separate figures | `None` |
 
 ## Styling and layout
 
@@ -73,6 +74,30 @@ fig, axes = plt.subplots(2, 2, figsize=size, layout="constrained")
 ```
 
 Use Matplotlib's `gridspec_kw`, `sharex`, `sharey` and `layout` for panel geometry. For colour bars and nested axes, select `layout="constrained"`; `hdg.plots.square(ax=ax)` gives a square plotting box.
+
+## `figures.align`
+
+Match the position and physical size of plotting boxes across separate figures. Supply a list or tuple of at least two distinct Matplotlib figures with the same `figsize`.
+
+```python
+figures = []
+for values, title in [(Phi_gaussian, "Gaussian RBF"), (Phi_matern, "Matern C4 RBF"), (Phi_homemade, "Homemade C4 RBF")]:
+    fig, ax = plt.subplots(figsize=FIG_SIZE)
+    ax.plot(x_input, values)
+    ax.set(xlabel="x", ylabel="y", title=title)
+    figures.append(fig)
+
+hdg.figures.align(figures=figures)
+for fig, name in zip(figures, ["gaussian", "matern", "homemade"]):
+    hdg.plots.save(f"{name}.png", fig=fig, transparent=True)
+hdg.plots.show()
+```
+
+Alignment finishes each figure, shares the largest fitted margins and checks that labels fit. Automatic x/y axis labels on the same side share an anchor position; padding increases where needed. Positions explicitly set with `set_label_coords()` remain unchanged. Canvas dimensions, data limits, ticks and palettes are preserved.
+
+Supports one rectilinear panel per figure without fixed aspect ratios, colourbars, inset axes, figure-level text or figure legends. Unsupported inputs raise an error. If fitting fails, increase `figsize` or simplify labels. Returns `None`.
+
+Align after adding data and labels, before saving. Earlier files are not updated. Reapply after changing content, layout or canvas size; resizing releases that figure's alignment. PNG, PDF and SVG exports retain the common plotting box, although tight cropping can produce different outer file dimensions. Figures outside the supplied sequence are unaffected.
 
 ## Palettes
 

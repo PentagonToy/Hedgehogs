@@ -70,7 +70,7 @@ Finishing preserves every plotted point and vector output unless rasterisation i
 
 Matplotlib defines artist semantics, transforms, text measurement and explicit placement. Hedgehogs adds its finishing priorities, so automatic `loc="best"` can select a different position from native Matplotlib. Selection is deterministic for unchanged inputs and environment; repeated output must avoid cumulative changes.
 
-For line and scatter plots, data-only edits retain axes geometry when canvas, limits, ticks, labels, fonts and layout stay unchanged. Automatic legends may move. Changes to text or ticks can require a new layout.
+For line and scatter plots, data-only edits retain axes geometry when canvas, limits, ticks, labels, fonts and layout stay unchanged. Automatic legends may move. Changes to text or ticks can require a new layout. For separate same-sized single-panel figures, [`figures.align`](../api/figures.md#figuresalign) shares fitted margins and automatic axis-label anchors before export. Explicit label coordinates remain unchanged. It freezes the common plotting boxes without retaining an implicit group; reapply after edits.
 
 Fonts, backends, formats, canvas size and library versions can change automatic positions. Use a named location or explicit anchor for fixed placement.
 

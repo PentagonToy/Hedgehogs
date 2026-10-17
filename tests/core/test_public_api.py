@@ -103,6 +103,15 @@ def test_figure_helpers_have_one_namespace_without_removed_wrappers():
 
 
 def test_legacy_figure_helpers_forward_to_plots():
-    for name in hdg.figures.__all__:
+    legacy = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks', 'square']
+    assert set(hdg.figures.__all__) == {*legacy, 'align'}
+    for name in legacy:
         assert getattr(hdg.figures, name) is getattr(hdg.plots, name)
     assert 'figures' not in hdg.__all__
+
+
+def test_cross_figure_alignment_has_one_public_namespace():
+    assert callable(hdg.figures.align)
+    assert 'align' in dir(hdg.figures)
+    assert not hasattr(hdg.plots, 'align')
+    assert not hasattr(hdg, 'align')
