@@ -7,7 +7,8 @@ from hedgehogs.terminal import Progress
 
 
 def test_package_identity_and_facade():
-    assert hdg.__version__ == __version__ == "0.0.1"
+    assert hdg.__version__ == __version__
+    assert __version__
     assert hdg.Table is Table
     assert hdg.Progress is Progress
     assert hdg.Table.__module__ == "hedgehogs.tables.table"

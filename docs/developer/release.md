@@ -15,6 +15,16 @@ Verify the wheel contains the package and `py.typed`. The source archive also co
 
 The Tests workflow checks Python 3.10, 3.12 and 3.13 and distribution files. Its `hedgehogs-distributions` artefact retains release candidates. Markdown-only pushes skip runtime CI; request a manual run before release if needed.
 
+## TestPyPI
+
+TestPyPI is separate from production PyPI. Use the selected package version unchanged, and keep the exact wheel and source archive for promotion after validation. Verify the downloaded TestPyPI files against the recorded SHA-256 checksums.
+
+```console
+python -m twine upload --repository testpypi /path/to/release/dist/*
+```
+
+Use a TestPyPI API token through the upload prompt or a configured credential store. Do not put tokens in source files or command arguments. TestPyPI versions cannot be overwritten; changed files require a new version. A Git tag records source identity, not publication status.
+
 ## Publish
 
 Confirm project-name ownership and authentication on PyPI before uploading. A missing project page does not guarantee that its name can be registered. The repository contains no automatic publication workflow or stored credentials.

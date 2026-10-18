@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.0.2 - Unreleased
+## 0.0.2 — 18 October 2026
 
 - Make `plots.show(fig=...)` display only the selected figure, preserving other figures and suppressing the pending Jupyter inline flush.
 
