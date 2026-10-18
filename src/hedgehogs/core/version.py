@@ -1,4 +1,4 @@
 """Hedgehogs version metadata."""
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 __date__ = "18 Oct 2026"

@@ -420,6 +420,8 @@ def show(fig: Figure | None = None, *, block: bool | None = None) -> None:
             except NonGuiException as exc:
                 warnings.warn(str(exc), UserWarning, stacklevel=2)
                 return
+            if fig.canvas.required_interactive_framework is None:
+                return
             if block is None:
                 block = not plt.isinteractive() and not hasattr(plt.show, '_needmain')
             if block:

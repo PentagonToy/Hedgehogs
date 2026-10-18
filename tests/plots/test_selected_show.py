@@ -38,6 +38,7 @@ def test_inline_selected_display_suppresses_cell_flush_preserves_other_figures(m
 @pytest.mark.parametrize('block', [False, True, None])
 def test_selected_gui_only_shows_selected_manager_and_owns_its_event_loop(monkeypatch, block):
     first, second = plt.figure(), plt.figure()
+    monkeypatch.setattr(first.canvas, 'required_interactive_framework', 'tk')
     first.add_subplot().plot([0, 1], [0, 1])
     other_show = Mock()
     monkeypatch.setattr(second.canvas.manager, 'show', other_show)
@@ -64,3 +65,14 @@ def test_no_selection_retains_global_show(monkeypatch):
     hdg.plots.show(block=False)
     display.assert_called_once_with(block=False)
     assert first._hedgehogs_finished and second._hedgehogs_finished
+
+
+@pytest.mark.parametrize('block', [None, True, False])
+def test_headless_linux_agg_never_starts_event_loop(monkeypatch, block):
+    import sys
+    first, second = plt.figure(), plt.figure()
+    monkeypatch.setattr(sys, 'platform', 'linux')
+    monkeypatch.delenv('DISPLAY', raising=False)
+    monkeypatch.setattr(first.canvas, 'start_event_loop', Mock(side_effect=AssertionError('Headless event loop')))
+    hdg.plots.show(fig=first, block=block)
+    assert plt.fignum_exists(second.number)

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.3 — 18 October 2026
+
+- Avoid entering a GUI event loop when `plots.show(fig=...)` runs with a non-GUI backend, including headless Linux. The TestPyPI 0.0.2 candidate was not promoted to production because of this blocking path.
+
 ## 0.0.2 — 18 October 2026
 
 - Make `plots.show(fig=...)` display only the selected figure, preserving other figures and suppressing the pending Jupyter inline flush.

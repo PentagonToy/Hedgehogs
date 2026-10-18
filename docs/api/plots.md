@@ -258,7 +258,7 @@ hdg.plots.show(fig=None, *, block=None) -> None
 
 With no selection, display follows `plt.show()`. With `fig`, only that figure is displayed; other figures are neither shown nor closed by the call. Already visible GUI windows stay visible. An invalid figure raises `TypeError`.
 
-In Jupyter inline mode, selected display suppresses the pending cell-end figure flush and keeps the figures available for later explicit display or saving. New plotting calls can schedule another automatic flush. `block` has no effect in inline mode. For GUI backends, `block=True` waits until the selected window closes; `False` returns immediately and requires the environment to process GUI events. The default follows interactive/IPython mode.
+In Jupyter inline mode, selected display suppresses the pending cell-end figure flush and keeps the figures available for later explicit display or saving. New plotting calls can schedule another automatic flush. `block` has no effect in inline mode. For GUI backends, `block=True` waits until the selected window closes; `False` returns immediately and requires the environment to process GUI events. The default follows interactive/IPython mode. Non-GUI backends do not enter a GUI event loop, even with `block=True`.
 
 ```python
 hdg.plots.show(fig=fig_gaussian)
