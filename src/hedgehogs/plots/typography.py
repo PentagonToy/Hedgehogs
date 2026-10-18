@@ -42,6 +42,8 @@ def refine_presentation(figure, state, annotations) -> None:
     from matplotlib.font_manager import FontProperties
     from matplotlib.lines import Line2D
     from matplotlib.collections import QuadMesh, PathCollection
+    from matplotlib.container import Container
+    from matplotlib.patches import Patch
 
     axes = [ax for ax in figure.axes
             if getattr(ax, 'get_subplotspec', lambda: None)() is not None
@@ -137,7 +139,7 @@ def refine_presentation(figure, state, annotations) -> None:
             outline = outline_scale(ax.bbox.width / figure.dpi, ax.bbox.height / figure.dpi,
                                     state.reference_size)
         properties['finish_outline_scale'] = (stamp, outline)
-        for axis, name in ((ax.xaxis, 'x'), (ax.yaxis, 'y')):
+        for name, axis in ax._axis_map.items():
             font(axis.label, points(plt.rcParams['axes.labelsize']),
                  points(plt.rcParams['axes.labelsize']) * factor)
             expected = points(plt.rcParams['xtick.labelsize'] if name == 'x' else plt.rcParams['ytick.labelsize'])
@@ -162,7 +164,7 @@ def refine_presentation(figure, state, annotations) -> None:
                          and getattr(locator, '_nbins', None) == owned[1])
             if owned is not None and locator is owned[0] and not unchanged:
                 tick_properties['finish_locator'] = None
-            if not hasattr(ax, '_colorbar') and axis.get_scale() == 'linear' and (automatic or unchanged):
+            if name in ('x', 'y') and not hasattr(ax, '_colorbar') and axis.get_scale() == 'linear' and (automatic or unchanged):
                 length = (ax.bbox.width if name == 'x' else ax.bbox.height) / figure.dpi * 72
                 size = axis.get_major_ticks()[0].label1.get_fontsize()
                 budget = min(6, max(3, round(length / (size * (4.5 if name == 'x' else 2.5)))))
@@ -220,6 +222,14 @@ def refine_presentation(figure, state, annotations) -> None:
                     handle.set_linewidth(source.get_linewidth())
                     widths = state._values(source.get_linewidth())
                     state.values.setdefault(handle, {})['linewidths'] = (widths, widths, 1.)
+                else:
+                    if isinstance(source, Container):
+                        source = next((child for child in source.get_children()
+                                       if isinstance(child, Patch)), None)
+                    if isinstance(source, Patch) and isinstance(handle, Patch):
+                        handle.set_linewidth(source.get_linewidth())
+                        widths = (source.get_linewidth(),)
+                        state.values.setdefault(handle, {})['linewidth'] = (widths, widths, 1.)
             stroke(legend.get_frame(), 'linewidth', float(plt.rcParams['patch.linewidth']), outline)
             expected = points(plt.rcParams['legend.fontsize'])
             for text in legend.get_texts():

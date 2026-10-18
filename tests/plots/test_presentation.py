@@ -681,3 +681,95 @@ def test_deferred_legend_restores_flags_on_measurement_failure():
             raise RuntimeError('measurement failure')
     assert automatic._loc == 0 and automatic.get_in_layout()
     assert explicit._loc == 2 and explicit.get_in_layout()
+
+
+def test_finished_internal_legend_has_a_space_budget_and_stable_output(tmp_path):
+    fig, ax = plt.subplots(figsize=(4.48, 4.4))
+    samples = ax.scatter([-2, 0, 2], [-10, 0, 4], label='Noisy Data')
+    ax.plot([-2, 0, 2], [-10, 0, 4], label='True Function')
+    ax.plot([-2, 0, 2], [-9, .5, 4.5], label='Fitted Polynomial')
+    ax.set(xlabel='x', ylabel='y', title='Polynomial fit')
+    legend = ax.legend(loc='lower right')
+    prepare(fig)
+    bounds = legend.get_window_extent(fig.canvas.get_renderer())
+    assert bounds.width <= ax.bbox.width * .6 + 2
+    assert bounds.height <= ax.bbox.height * .4 + 2
+    assert bounds.width * bounds.height <= ax.bbox.width * ax.bbox.height * .2 + 100
+    size = legend.get_texts()[0].get_fontsize()
+    assert size < ax.get_xticklabels()[0].get_fontsize()
+    handles = getattr(legend, 'legend_handles', None)
+    if handles is None:
+        handles = legend.legendHandles
+    assert list(handles[0].get_linewidths()) == list(samples.get_linewidths())
+    position = ax.get_position().bounds
+    for extension in ['png', 'pdf', 'svg']:
+        hdg.plots.save(tmp_path / f'compact.{extension}', fig=fig, transparent=True)
+        prepare(fig)
+        assert legend.get_texts()[0].get_fontsize() == pytest.approx(size, abs=.2)
+        assert ax.get_position().bounds == pytest.approx(position)
+
+
+@pytest.mark.parametrize('direct', [False, True])
+def test_legend_fitting_preserves_explicit_fontsize(direct):
+    fig, ax = plt.subplots(figsize=(4.48, 4.4))
+    ax.plot([0, 1], label='A deliberately long legend label')
+    legend = ax.legend(loc='upper left') if direct else ax.legend(fontsize=16, loc='upper left')
+    if direct:
+        legend.get_texts()[0].set_fontsize(16)
+    prepare(fig)
+    assert legend.get_texts()[0].get_fontsize() == pytest.approx(16)
+
+
+@pytest.mark.parametrize('kind', ['line', 'scatter', 'bar', 'hist', 'box', '3d'])
+def test_legend_budget_across_plot_types(kind):
+    fig = plt.figure(figsize=(4.48, 4.4))
+    ax = fig.add_subplot(projection='3d' if kind == '3d' else None)
+    sources = []
+    for index, name in enumerate(['Observed samples', 'Reference model', 'Fitted response']):
+        if kind == 'scatter':
+            source = ax.scatter([0, 1], [index, index + 1], label=name)
+        elif kind == 'bar':
+            source = ax.bar([index], [index + 1], label=name).patches[0]
+        elif kind == 'hist':
+            source = ax.hist([index, index + .5, index + 1], label=name)[2][0]
+        elif kind == 'box':
+            source = ax.boxplot([index, index + .5, index + 1], positions=[index],
+                                patch_artist=True, label=name)['boxes'][0]
+        else:
+            source = ax.plot([0, 1], [index, index + 1], label=name)[0]
+        sources.append(source)
+    legend = ax.legend(loc='upper left')
+    for _ in range(2):
+        prepare(fig)
+        box = legend.get_window_extent(fig.canvas.get_renderer())
+        assert box.width <= ax.bbox.width * .6 + 2
+        assert box.height <= ax.bbox.height * .4 + 2
+        assert box.width * box.height <= ax.bbox.width * ax.bbox.height * .2 + 100
+        handles = getattr(legend, 'legend_handles', None)
+        if handles is None:
+            handles = legend.legendHandles
+        for source, handle in zip(sources, handles):
+            assert handle.get_linewidth() == pytest.approx(source.get_linewidth())
+
+
+@pytest.mark.parametrize('kind', ['line', 'bar'])
+def test_shared_inside_legend_uses_grid_space_budget(kind):
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3))
+    for ax in axes:
+        for index in range(3):
+            if kind == 'bar':
+                ax.bar([index], [index + 1], label=f'Reference response {index}')
+            else:
+                ax.plot([0, 1], [index, index + 1], label=f'Reference response {index}')
+    legend = hdg.plots.legend(shared=True, loc='upper center', domain='inside', ncol=3)
+    prepare(fig)
+    bounds = legend.get_window_extent(fig.canvas.get_renderer())
+    container = legend.get_bbox_to_anchor()
+    floor = max(7., .75 * float(plt.rcParams['legend.fontsize']))
+    assert (bounds.width <= container.width * .6 + 2
+            or legend.get_texts()[0].get_fontsize() == pytest.approx(floor, abs=.1))
+    if kind == 'bar':
+        handles = getattr(legend, 'legend_handles', None)
+        if handles is None:
+            handles = legend.legendHandles
+        assert handles[0].get_linewidth() == pytest.approx(axes[0].patches[0].get_linewidth())

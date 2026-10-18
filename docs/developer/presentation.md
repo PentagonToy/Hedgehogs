@@ -42,7 +42,7 @@ Reference-size panels retain configured text sizes. For a larger panel, let $L$ 
 | Dense bar-value labels | $\min(s,1.1)$ |
 | Sparse bar-value labels | $\max(1,0.9s)$ |
 
-Apply panel scaling to default labels, ticks, titles and legends. Bar-value labels start from the configured tick size; marker areas retain their configured sizes.
+Apply panel scaling to default labels, ticks and titles. Legends start at the same scale, then fit the space budget below. Bar-value labels start from the configured tick size; marker areas retain their configured sizes. On 3D axes, the z-axis follows the same rules. Explicit font sizes and the z-axis tick locator remain unchanged.
 
 Default strokes scale independently of text density:
 
@@ -60,7 +60,9 @@ Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend spac
 
 ## Legend fitting and limits
 
-Ordinary rendering targets a legend width of 60% of its axes, or 90% of the canvas for a figure legend, and a height of 40% of the container. A scaled 6 pt reference font floor takes priority over these compactness targets. Wider fallback fonts can exceed the target at that floor. Explicit external anchors bypass this fitting.
+Default inside legends in `show()` and `save()` target at most 60% of panel width, 40% of height and 20% of area. Shared inside legends use the combined panel bounds. Text and spacing scale together; marker sizes and stroke weight follow the plotted sources, including bar and histogram patches. The font floor is `max(7 pt, 0.75 × configured legend size)`; readability takes priority over these soft targets. Explicit fonts, outside legends and external anchors retain user control. Native figure legends and the specialised pairplot and tree layouts retain their own sizing. Default inside legend fitting preserves panel geometry and axis typography.
+
+Ordinary drawing retains its 60% axes-width or 90% figure-width target, 40% height target and scaled 6 pt floor. These are Hedgehogs defaults, not publication standards. See the [measured reference examples](../../others/references/legend-typography.json).
 
 `show()` and `save()` refine typography and measure geometry before placing automatic legends. Explicit locations and anchors stay fixed. Large legends may need a wider canvas or external anchor. See [Legend placement mathematics](legend-experiment.md) for the search and acceptance rules.
 
@@ -87,6 +89,8 @@ f_{print}=f_{export}\frac{W_{print}}{W_{export}}.
 $$
 
 Inspect the figure at its intended physical width and follow the target journal's requirements. Split crowded figures or use a wider placement when text becomes too small. DPI controls raster resolution; it cannot compensate for reduced physical text size.
+
+There is no universal title–label–legend–tick size ladder. [Nature](https://research-figure-guide.nature.com/figures/preparing-figures-our-specifications/) specifies 5–7 pt figure text and 8 pt panel letters; [Elsevier](https://www.elsevier.com/about/policies-and-standards/author/artwork-and-media-instructions/artwork-sizing) suggests about 7 pt normal lettering. These refer to final printed size, independently of manuscript body size.
 
 ## Verification
 

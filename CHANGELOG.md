@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Default inside legends use bounded text and spacing during figure finishing, including shared legends. Axis typography, panel geometry and explicit font choices remain fixed; marker and patch outlines match their plotted sources.
+
+- Apply proportional typography to 3D z-axis ticks and labels, preserving explicit font sizes.
+
 ## 0.0.4 — 18 October 2026
 
 - Recognise the registered `inline` backend name as well as its module path for selected notebook display.

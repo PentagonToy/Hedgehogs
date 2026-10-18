@@ -675,3 +675,27 @@ def test_other_container_legends_render_and_redraw(kind):
     for _ in range(3):
         fig.canvas.draw()
     assert legend.get_texts()[0].get_text() == 'Data'
+
+
+@pytest.mark.parametrize('explicit', [False, True])
+def test_3d_tick_sizes_survive_finish_and_export(explicit, tmp_path):
+    from hedgehogs.plots.presentation import prepare
+
+    fig = plt.figure(figsize=tuple(value * 1.5 for value in hdg.figsize()))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot([0, 1], [0, 1], [0, 12])
+    ax.set_zlabel('Objective')
+    if explicit:
+        ax.tick_params(axis='z', labelsize=7)
+    locator = ax.zaxis.get_major_locator()
+    prepare(fig)
+    sizes = [axis.get_major_ticks()[0].label1.get_fontsize()
+             for axis in (ax.xaxis, ax.yaxis, ax.zaxis)]
+    assert sizes[2] == pytest.approx(7 if explicit else sizes[0])
+    assert ax.zaxis.get_major_locator() is locator
+    for extension in ('png', 'svg'):
+        hdg.plots.save(tmp_path / ('surface.' + extension), fig=fig,
+                       bbox_inches='tight', transparent=True)
+        prepare(fig)
+        assert [axis.get_major_ticks()[0].label1.get_fontsize()
+                for axis in (ax.xaxis, ax.yaxis, ax.zaxis)] == pytest.approx(sizes)

@@ -1,0 +1,44 @@
+{
+  "method": "Manual text-only regions on page renders at 330 dpi. Ratios compare visible ink spans, not PDF font point sizes. Selected examples are not a representative survey or a journal specification.",
+  "samples": [
+    {
+      "id": "fiore-2022-fig13a",
+      "source": "https://doi.org/10.1016/j.ijheatmasstransfer.2022.122998",
+      "pdf_page": 13,
+      "legend_to_tick_ink_ratio": 1.125,
+      "legend_to_axis_ink_ratio": 1.174,
+      "legend_area_fraction": 0.19
+    },
+    {
+      "id": "li-2023-fig11a",
+      "source": "https://doi.org/10.1016/j.egyai.2023.100266",
+      "pdf_page": 10,
+      "legend_to_tick_ink_ratio": 0.81,
+      "legend_to_axis_ink_ratio": 0.586,
+      "legend_area_fraction": 0.165
+    },
+    {
+      "id": "liu-2024-fig13b",
+      "source": "https://doi.org/10.1016/j.combustflame.2023.113275",
+      "pdf_page": 9,
+      "legend_to_tick_ink_ratio": 0.394,
+      "legend_to_axis_ink_ratio": 0.371,
+      "legend_area_fraction": 0.12
+    },
+    {
+      "id": "weng-2025-fig8",
+      "source": "https://doi.org/10.1016/j.combustflame.2024.113847",
+      "pdf_page": 9,
+      "legend_to_tick_ink_ratio": 1.04,
+      "legend_to_axis_ink_ratio": 0.765,
+      "legend_area_fraction": 0
+    }
+  ],
+  "policy": {
+    "inside_width_fraction": 0.6,
+    "inside_height_fraction": 0.4,
+    "inside_area_fraction": 0.2,
+    "minimum_points": "max(7, 0.75 * configured legend size)",
+    "authority": "Hedgehogs design choice; journal instructions apply at final insertion size."
+  }
+}

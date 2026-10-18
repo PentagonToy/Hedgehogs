@@ -234,6 +234,8 @@ Returns an editable `Legend`. Outside `upper` and `lower` locations clear titles
 
 `shared=True` deduplicates labels in panel order and centres on the panel grid. Marker styles follow the plotted data. Conflicting styles warn and use the first; existing panel legends remain. Single-panel figures also work.
 
+Default inside legends fit a bounded space budget, including shared legends, while preserving axis typography and panel geometry. Marker and patch outlines follow the plotted sources. Explicit font sizes and outside placement remain under user control.
+
 ```python
 # Current panel
 hdg.plots.legend(loc="upper right")
@@ -270,7 +272,7 @@ An explicit `InlineBackend.close_figures=False` setting keeps figures open. Sele
 
 For GUI backends, `block=True` waits until the selected window closes; `False` returns immediately and requires the environment to process GUI events. The default follows interactive/IPython mode. Non-GUI backends do not enter a GUI event loop, even with `block=True`.
 
-Finishing adjusts default typography, numeric ticks and supported bar-value labels. It preserves data, limits and explicit settings. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
+Finishing adjusts default typography, numeric ticks and supported bar-value labels. For 3D axes, default z-axis labels and tick text receive the same font scaling as x and y, while explicit font sizes and the z-axis tick locator are preserved. It preserves data, limits and explicit settings. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
 
 ```python
 hdg.set_style()

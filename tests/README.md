@@ -53,7 +53,7 @@ Store JSON reports outside the source tree with source changes and hardware deta
 
 ## Regression criteria
 
-Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Run font-sensitive cases with the configured serif family and DejaVu Serif. Ordinary legend fitting may exceed its 60% width target at the scaled 6 pt font floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
+Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Cover inside legends for lines, scatter, bars, histograms, boxes, 3D axes and shared panels, including source outline widths. Run font-sensitive cases with the configured serif family and DejaVu Serif. Finished inside legends target 60% width, 40% height and 20% area, subject to the `max(7 pt, 0.75 × configured legend size)` floor. Ordinary drawing uses a scaled 6 pt floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
 
 Cross-dataset checks hold canvas size, limits, ticks, labels, fonts and layout configuration fixed while changing line/scatter data. Compare axes bounds after finishing, data edits and export; automatic legend positions may differ. Hook checks cover repeated style cycles, third-party replacements and failure cleanup.
 

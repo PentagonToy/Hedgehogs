@@ -220,7 +220,7 @@ class _FigureStyle:
         self._legend_handles(figure)
         tick_artists = set()
         for axes, factor in factors.items():
-            for axis in (axes.xaxis, axes.yaxis):
+            for axis in axes._axis_map.values():
                 self._property(axis, 'labelpad', lambda: axis.labelpad,
                                lambda value: setattr(axis, 'labelpad', value), factor)
                 for which, ticks, options in (
@@ -258,6 +258,8 @@ class _FigureStyle:
                 self._artist(artist, artist_factors.get(artist, fallback))
         if renderer is not None:
             fitted_titles = self._fit_titles(figure, renderer)
+            if getattr(figure, '_hedgehogs_finished', False):
+                self._fit_legends(figure, renderer, factors, fallback)
             self._fit_layout(figure, renderer)
             engine = figure.get_layout_engine()
             if (fitted_titles and engine is not None
@@ -278,6 +280,9 @@ class _FigureStyle:
                 if handles is None:
                     handles = legend.legendHandles
                 for source, handle in zip(sources, handles):
+                    if isinstance(source, Container) and isinstance(handle, Patch):
+                        source = next((child for child in source.get_children()
+                                       if isinstance(child, Patch)), None)
                     names = ('linewidth', 'markeredgewidth', 'markersize') if isinstance(source, Line2D) and isinstance(handle, Line2D) else (
                         ('linewidth',) if (isinstance(source, Collection) and isinstance(handle, Collection))
                         or (isinstance(source, Patch) and isinstance(handle, Patch)) else ())
@@ -467,25 +472,67 @@ class _FigureStyle:
             properties["layout_last"] = {key: getattr(figure.subplotpars, key) for key in keys}
 
     def _fit_legends(self, figure: Any, renderer, factors: dict, fallback: float) -> None:
-        if getattr(figure, "_hedgehogs_finished", False):
-            return
+        finished = getattr(figure, '_hedgehogs_finished', False)
         for legend in figure.findobj(match=Legend):
             if legend.axes is not None and legend._bbox_to_anchor is not None:
                 continue  # Explicit external anchors retain the author's layout.
+            if finished:
+                if getattr(legend, '_shared_domain', None) == 'outside':
+                    continue
+                texts = [*legend.get_texts(), legend.get_title()]
+                if (getattr(legend, '_hedgehogs_font_explicit', False)
+                        or any(getattr(text, '_hedgehogs_font_explicit', False)
+                               or ('finish_role.fontsize' in self.values.get(text, {})
+                                   and self.values[text]['finish_role.fontsize'] is None)
+                               for text in texts if text.get_visible() and text.get_text())):
+                    continue
+                custom = False
+                for text in texts:
+                    properties = self.values.get(text, {})
+                    if not text.get_text() or 'finish_role.fontsize' in properties:
+                        continue
+                    expected = (plt.rcParams['legend.title_fontsize'] or plt.rcParams['font.size']
+                                if text is legend.get_title() else plt.rcParams['legend.fontsize'])
+                    expected = FontProperties(size=expected).get_size_in_points()
+                    base = properties.get('fontsize', ((text.get_fontsize(),),))[0][0]
+                    if abs(base - expected) > 1e-6:
+                        custom = True
+                if custom:
+                    continue
             container = legend.axes.bbox if legend.axes is not None else figure.bbox
+            if finished and legend.axes is None:
+                if getattr(legend, '_shared_domain', None) != 'inside':
+                    continue
+                container = legend.get_bbox_to_anchor()
             bounds = legend._legend_box.get_window_extent(renderer)
             if bounds.width <= 0 or bounds.height <= 0:
                 continue
             factor = factors.get(legend.axes, fallback)
-            width_fraction = 0.6 if legend.axes is not None else 0.9
+            width_fraction = 0.6 if finished or legend.axes is not None else 0.9
             fit = min(1.0, container.width * width_fraction / bounds.width,
                       container.height * 0.4 / bounds.height)
-            # Compact ordinary legends without making text smaller than 6 pt
-            # at reference size. Exceptionally long labels remain explicit choices.
-            fit = min(1.0, max(fit, 6.0 * factor / legend._fontsize))
+            # Readability floors take priority over the soft geometry budgets.
+            if finished:
+                fit = min(fit, (container.width * container.height * .2
+                                / (bounds.width * bounds.height)) ** .5)
+                base_size = FontProperties(size=plt.rcParams['legend.fontsize']).get_size_in_points()
+                floor = max(7., .75 * base_size)
+            else:
+                floor = 6. * factor
+            fit = min(1.0, max(fit, floor / legend._fontsize))
             if fit < 1.0:
+                scale = (self.values.get(legend, {}).get('legend_fontsize', (None, None, factor))[2]
+                         if finished else factor)
                 for artist in legend.findobj():
-                    self._artist(artist, factor * fit)
+                    if finished and not isinstance(artist, (Text, Legend, DrawingArea, PackerBase)):
+                        continue
+                    self._artist(artist, scale * fit)
+                    if finished:
+                        properties = self.values.setdefault(artist, {})
+                        if isinstance(artist, Text) and properties.get('finish_role.fontsize') is not None:
+                            properties['finish_role.fontsize'] = artist.get_fontsize()
+                        elif isinstance(artist, Legend) and properties.get('finish_role.legend_fontsize') is not None:
+                            properties['finish_role.legend_fontsize'] = legend._fontsize
 
     def _align_legends(self, figure: Any, renderer) -> None:
         for legend in figure.findobj(match=Legend):
