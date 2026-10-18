@@ -23,6 +23,6 @@ hdg.plots.save("first-figure.svg", fig=fig, bbox_inches=None)
 hdg.plots.show(fig=fig)
 ```
 
-`save()` and `show()` share finishing. This example writes SVG; use a `.pdf` filename for publication. Artists remain editable. `reset_style()` restores Matplotlib defaults.
+`save()` and `show()` share finishing. This example writes SVG; use a `.pdf` filename for publication. Artists remain editable. In notebooks, selected display clears the open-figure list, while the `fig` object remains available for further saving or display. `reset_style()` restores Matplotlib defaults.
 
 Compare [gallery examples](gallery.md), choose a [palette](api/palettes.md), or inspect the [figure](api/figures.md) and [plot](api/plots.md) references. For non-graphical output, start with [tables](api/tables.md) or [progress](api/terminal.md).

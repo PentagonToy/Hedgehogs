@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.4 — 18 October 2026
+
+- Recognise the registered `inline` backend name as well as its module path for selected notebook display.
+
+- Consume the current inline figure batch when selecting `plots.show(fig=...)`: display only that figure and remove all open figures from pyplot registration by default. Retain Figure objects for explicit saving or display and respect an explicit keep-open setting.
+
 ## 0.0.3 — 18 October 2026
 
 - Avoid entering a GUI event loop when `plots.show(fig=...)` runs with a non-GUI backend, including headless Linux. The TestPyPI 0.0.2 candidate was not promoted to production because of this blocking path.

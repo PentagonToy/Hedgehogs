@@ -403,11 +403,14 @@ def show(fig: Figure | None = None, *, block: bool | None = None) -> None:
     """Finish and display only fig, or all open figures when omitted."""
     if fig is not None:
         prepare(fig)
-        if 'matplotlib_inline' in str(plt.get_backend()).lower():
+        backend = str(plt.get_backend()).lower()
+        if backend == 'inline' or 'matplotlib_inline' in backend:
             from IPython.display import display
             from matplotlib_inline import backend_inline
             display(fig)
-            # Suppress the cell-end flush without closing other managed figures.
+            if backend_inline.InlineBackend.instance().close_figures:
+                plt.close('all')
+            # Explicit selection consumes the pending inline batch.
             setattr(backend_inline.show, '_to_draw', [])
             setattr(backend_inline.show, '_draw_called', False)
         else:
