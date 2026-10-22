@@ -14,7 +14,6 @@ from matplotlib.text import Annotation, Text
 from math import isclose, isfinite
 
 from ..core.palette import get_palette
-from .style import _FONT_SERIF
 from . import style
 
 
@@ -83,9 +82,9 @@ def tree(
     fig: Any = ax.figure
     renderer = fig._get_renderer()
     font = float(plt.rcParams['font.size'] if fontsize is None else fontsize)
-    title_font = FontProperties(family=_FONT_SERIF, size=font, weight='bold')
+    title_font = FontProperties(family='serif', size=font, weight='bold')
     detail_ratio = FontProperties(size=plt.rcParams['xtick.labelsize']).get_size_in_points() / float(plt.rcParams['font.size'])
-    detail_font = FontProperties(family=_FONT_SERIF, size=font * detail_ratio)
+    detail_font = FontProperties(family='serif', size=font * detail_ratio)
     palette = style._active_palette if style._active_palette is not None else get_palette()
     colour_names = ('orange', 'blue', 'green', 'purple', 'red')
     colours = ([palette[name] for name in colour_names] if all(name in palette for name in colour_names)
@@ -239,7 +238,7 @@ def tree(
             end = (child.x, child_y - child.height / 2)
             dx, dy = end[0] - start[0], end[1] - start[1]
             midpoint = ((start[0] + end[0]) / 2, (start[1] + end[1]) / 2)
-            branch_font = FontProperties(family=_FONT_SERIF, size=font * .85)
+            branch_font = FontProperties(family='serif', size=font * .85)
             label_width, label_height = measure(branch, branch_font)
             # Leave a real gap around the measured text instead of masking
             # the connector with an opaque box in transparent exports.
@@ -254,12 +253,12 @@ def tree(
                 '', end, xytext=after,
                 arrowprops=dict(arrowstyle='-|>', color='black', linewidth=plt.rcParams['lines.linewidth'] * scale,
                                 mutation_scale=font * .8 * scale, shrinkA=0, shrinkB=2 * scale),
-                fontfamily=_FONT_SERIF, zorder=1,
+                fontfamily='serif', zorder=1,
             )
             fixed(arrow)
             fixed(arrow.arrow_patch)
             label_artist = ax.annotate(branch, midpoint, ha='center', va='center',
-                                       fontsize=font * .85 * scale, fontfamily=_FONT_SERIF, zorder=2)
+                                       fontsize=font * .85 * scale, fontfamily='serif', zorder=2)
             fixed(label_artist)
             annotations.append(label_artist)
         patch = FancyBboxPatch((node.x - node.width / 2, y - node.height / 2),
@@ -269,14 +268,14 @@ def tree(
         fixed(patch)
         if node.title:
             title = ax.annotate(node.title, (node.x, y - node.height / 2 + font * .85),
-                                ha='center', va='top', fontsize=font * scale, fontfamily=_FONT_SERIF, weight='bold', zorder=4)
+                                ha='center', va='top', fontsize=font * scale, fontfamily='serif', weight='bold', zorder=4)
             fixed(title)
             annotations.append(title)
         detail_y = y - node.height / 2 + font * .85
         if node.title:
             detail_y += node.title_height + font * .35
         detail = ax.annotate(node.detail, (node.x, detail_y),
-                             ha='center', va='top', fontsize=font * detail_ratio * scale, fontfamily=_FONT_SERIF, linespacing=1.2, zorder=4)
+                             ha='center', va='top', fontsize=font * detail_ratio * scale, fontfamily='serif', linespacing=1.2, zorder=4)
         fixed(detail)
         annotations.append(detail)
     return annotations

@@ -119,7 +119,7 @@ def test_pyplot_canvas_and_annotation_return_match_plot_tree_convention():
     assert fig.get_size_inches() == pytest.approx([10, 8])
     assert all(isinstance(artist, Annotation) for artist in annotations)
     fig.canvas.draw()
-    assert all(artist.get_fontfamily()[0] == 'Times New Roman' for artist in annotations)
+    assert all(artist.get_fontfamily() == ['serif'] for artist in annotations)
     assert any(artist.get_fontweight() == 'bold' for artist in annotations)
     first_count = len(plt.gca().patches)
     hdg.plots.tree(classifier())
@@ -185,3 +185,30 @@ def test_branch_labels_have_no_fill_and_connectors_avoid_text(size):
                 assert not path.intersects_bbox(bounds, filled=False)
     fig.savefig(io.BytesIO(), format='png', transparent=True, dpi=300)
     fig.savefig(io.BytesIO(), format='svg', transparent=True)
+
+
+def test_tree_renders_without_times_fonts(monkeypatch, caplog):
+    import logging
+    from matplotlib import font_manager
+
+    manager = font_manager.fontManager
+    available = [font for font in manager.ttflist if 'times' not in font.name.lower()]
+    monkeypatch.setattr(manager, 'ttflist', available)
+    manager._findfont_cached.cache_clear()
+    try:
+        with caplog.at_level(logging.WARNING, logger='matplotlib.font_manager'):
+            annotations = hdg.plots.tree(classifier(), feature_names=['Length'])
+            fig = plt.gcf()
+            fig.canvas.draw()
+            assert len(fig.axes[0].patches) == 3
+            for artist in annotations:
+                path = font_manager.findfont(artist.get_fontproperties())
+                assert 'DejaVuSerif' in path
+            for extension in ('png', 'pdf', 'svg'):
+                output = io.BytesIO()
+                fig.savefig(output, format=extension, transparent=True, bbox_inches='tight')
+                assert output.tell() > 1000
+        assert not [record for record in caplog.records
+                    if record.name == 'matplotlib.font_manager' and 'not found' in record.message]
+    finally:
+        manager._findfont_cached.cache_clear()

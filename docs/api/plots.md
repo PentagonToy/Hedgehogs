@@ -60,7 +60,7 @@ hdg.plots.show()
 
 ## `plots.tree`
 
-Draw a fitted, single-output decision tree without Graphviz.
+Draw a fitted, single-output decision tree without Graphviz. Text follows the configured `font.serif` fallback list. With `set_style()`, DejaVu Serif is used when Times New Roman and Times are unavailable; installing Times is optional.
 
 ```python
 hdg.plots.tree(
