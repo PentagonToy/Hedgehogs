@@ -393,7 +393,7 @@ def prepare(fig: Figure) -> None:
             target._hedgehogs_finish_layout_locked = True
             try:
                 margin = renderer.points_to_pixels(3)
-                for _ in range(4):
+                for _ in range(8):
                     changed = False
                     for ax in three_d:
                         # Recheck projected tick text after the panel has moved.
@@ -411,9 +411,27 @@ def prepare(fig: Figure) -> None:
                                 owned[0].set_params(nbins=budget)
                                 state.values[axis]['finish_locator'] = (owned[0], budget)
                                 changed = True
+                        labels = []
+                        for axis in ax._axis_map.values():
+                            if not axis.label.get_visible() or not axis.label.get_text():
+                                continue
+                            label_bounds = axis.label.get_window_extent(renderer)
+                            labels.append(label_bounds)
+                            values = state.values.get(axis, {})
+                            owned_pad = values.get('finish_role.labelpad')
+                            if (owned_pad is not None and abs(axis.labelpad - owned_pad) < 1e-6
+                                    and any(label_bounds.overlaps(box) for _, box in boxes)):
+                                pad = axis.labelpad + max(2., axis.label.get_fontsize() * .25)
+                                axis.labelpad = pad
+                                values['finish_role.labelpad'] = pad
+                                values['labelpad'] = ((pad,), (pad,), 1.)
+                                changed = True
                         bounds = ax.get_tightbbox(renderer)
-                        if bounds is None:
+                        # Older Matplotlib versions omit 3D axis labels here.
+                        boxes_to_fit = labels + ([] if bounds is None else [bounds])
+                        if not boxes_to_fit:
                             continue
+                        bounds = Bbox.union(boxes_to_fit)
                         left = max(0., margin - bounds.x0) / target.bbox.width
                         right = max(0., bounds.x1 + margin - target.bbox.width) / target.bbox.width
                         bottom = max(0., margin - bounds.y0) / target.bbox.height

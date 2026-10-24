@@ -1,10 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.0.5 — 24 October 2026
 
 - Include documentation configuration, styles, scripts and reference data in source distributions, and support site builds without Git metadata.
 
-- Apply consistent, bounded typography to all three axes, separate automatic ticks at shared corners and fit 3D axis labels inside the canvas while preserving explicit settings.
+- Apply consistent, bounded typography to all three axes, separate automatic ticks at shared corners and fit 3D axis labels inside the canvas while preserving explicit settings. Measure fallback-font spacing and include axis labels omitted by older Matplotlib bounds.
 
 - Use the configured serif fallback for decision-tree text without repeated missing-Times font warnings.
 

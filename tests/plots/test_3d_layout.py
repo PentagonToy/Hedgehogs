@@ -18,9 +18,11 @@ def styled_figures():
     hdg.reset_style()
 
 
+@pytest.mark.parametrize('font_family', ['serif', 'DejaVu Serif'])
 @pytest.mark.parametrize('azimuth', [-60, 35])
 @pytest.mark.parametrize('scale', [1.5, 2])
-def test_surface_labels_fit_and_exports_preserve_geometry(azimuth, scale, tmp_path):
+def test_surface_labels_fit_and_exports_preserve_geometry(font_family, azimuth, scale, tmp_path):
+    plt.rcParams['font.family'] = font_family
     fig = plt.figure(figsize=tuple(v * scale for v in hdg.figsize()))
     ax = fig.add_subplot(111, projection='3d')
     x, y = np.meshgrid(np.linspace(0, 1, 30), np.linspace(0, 1, 30))
