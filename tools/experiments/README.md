@@ -26,14 +26,3 @@ python tools/experiments/validate_notebook.py /path/to/notebook-results
 ```
 
 These explicit scripts audit three acceptance thresholds across synthetic settings, measure placement and first-show costs up to one million points, and execute the existing synthetic plotting notebook in isolated directories. The hybrid accepts data-only changes after at least 10% exact-score improvement; ties keep the classic placement. A zero-overlap conventional location skips the grid. This engineering preference is separate from the grid's mathematical objective.
-
-## Try finishing
-
-```python
-from tools.experiments.legend_grid import experimental_placement
-
-with experimental_placement():
-    hdg.plots.show(fig)
-```
-
-The context temporarily selects a comparison policy and restores the original on exit. It is intended for local experiments, not concurrent rendering or a supported public API.

@@ -4,7 +4,7 @@ The default finishing policy can propose legend positions between the standard n
 
 ## Spatial cost
 
-Measure the legend width $w$ and height $h$ with Matplotlib. Divide the axes interior, after border padding, into an $N\times N$ grid; the prototype uses $N=128$. If the interior width and height are $A$ and $B$, the window dimensions are
+Measure the legend width $w$ and height $h$ with Matplotlib. Divide the axes interior, after border padding, into an $N\times N$ grid; the default uses $N=128$. If the interior width and height are $A$ and $B$, the window dimensions are
 
 $$
 m=\left\lceil\frac{Nw}{A}\right\rceil,\qquad
@@ -68,4 +68,4 @@ $$
 
 This threshold is a conservative presentation preference, not a mathematical constant. Clipping and text retain their higher lexicographic priority. Sensitivity checks compare $\delta=0$, $0.10$ and $0.25$.
 
-Changing placement policy on an already finished figure re-evaluates legend placement without recalculating axes geometry. The experimental context restores the normal policy on exit; subsequent finishing revisits placement as needed. The hybrid is the default for `plots.show()` and `plots.save()`; development contexts can temporarily select the classic or grid-only policy.
+The hybrid is the default for `plots.show()` and `plots.save()`. Development comparisons can select classic or grid-only placement without reopening finished axes geometry; the context restores the default on exit.

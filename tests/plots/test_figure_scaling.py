@@ -687,12 +687,15 @@ def test_3d_tick_sizes_survive_finish_and_export(explicit, tmp_path):
     ax.set_zlabel('Objective')
     if explicit:
         ax.tick_params(axis='z', labelsize=7)
+        from matplotlib.ticker import FixedLocator
+        ax.zaxis.set_major_locator(FixedLocator([0, 6, 12]))
     locator = ax.zaxis.get_major_locator()
     prepare(fig)
     sizes = [axis.get_major_ticks()[0].label1.get_fontsize()
              for axis in (ax.xaxis, ax.yaxis, ax.zaxis)]
     assert sizes[2] == pytest.approx(7 if explicit else sizes[0])
-    assert ax.zaxis.get_major_locator() is locator
+    if explicit:
+        assert ax.zaxis.get_major_locator() is locator
     for extension in ('png', 'svg'):
         hdg.plots.save(tmp_path / ('surface.' + extension), fig=fig,
                        bbox_inches='tight', transparent=True)

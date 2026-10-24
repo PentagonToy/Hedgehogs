@@ -33,7 +33,7 @@ The Science canvas measures 2.24 × 2.20 inches. Default subplot fractions give 
 | Pairplot | Scale from the smallest solved panel short side; retain configured size floors |
 | Decision tree | Fit text, boxes and branches to the measured node layout |
 
-Reference-size panels retain configured text sizes. For a larger panel, let $L$ be its short side. Dense panels have at least six bar-value labels or more than four category ticks. Legend count does not change panel typography; placement and outside spacing are handled separately.
+Reference-size panels retain configured text sizes. For a larger panel, let $L$ be its short side. Dense panels include 3D axes, images, meshes, at least six bar-value labels or more than four category ticks. Legend count does not change panel typography; placement and outside spacing are handled separately.
 
 | Text role | Multiplier |
 | --- | --- |
@@ -42,7 +42,7 @@ Reference-size panels retain configured text sizes. For a larger panel, let $L$ 
 | Dense bar-value labels | $\min(s,1.1)$ |
 | Sparse bar-value labels | $\max(1,0.9s)$ |
 
-Apply panel scaling to default labels, ticks and titles. Legends start at the same scale, then fit the space budget below. Bar-value labels start from the configured tick size; marker areas retain their configured sizes. On 3D axes, the z-axis follows the same rules. Explicit font sizes and the z-axis tick locator remain unchanged.
+Apply panel scaling to default labels, ticks and titles. Legends start at the same scale, then fit the space budget below. Bar-value labels start from the configured tick size; marker areas retain their configured sizes. 3D axes use bounded dense typography and default label spacing based on tick size. Automatic linear tick budgets use projected axis lengths and omit endpoints to avoid shared-corner collisions. Finishing fits projected labels inside the canvas without changing the view, limits or box aspect. Explicit fonts, label padding and tick locators remain unchanged.
 
 Default strokes scale independently of text density:
 
@@ -54,7 +54,7 @@ Here $W,H$ are panel dimensions and $A_{ref}$ is the reference canvas area times
 
 Relative to data-line width, axes use $0.9/1.1$ and marker edges $0.5/1.1$. Marker diameter scales with `base_fontsize` relative to 10.5 pt, with a 2.5 pt floor.
 
-Default linear ticks use three to six intervals. Custom, fixed, logarithmic and date locators stay unchanged. Colour-bar text follows its parent axes.
+Default 2D linear ticks use three to six intervals. 3D budgets use projected lengths, then reduce automatic ticks when measured labels overlap. Custom, fixed, logarithmic and date locators stay unchanged. Colour-bar text follows its parent axes.
 
 Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend space. Linear sizes scale by $s$ and marker areas by $s^2$. Pairplots and trees own their sizing and bypass ordinary scaling. Pairplot fitting runs during construction; later canvas resizing does not repeat it.
 

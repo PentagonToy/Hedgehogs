@@ -52,8 +52,13 @@ def on_files(files, config):
         content = render_notebook(source, title, introduction, config, files)
         files.append(File.generated(config, name, content=content))
         SOURCES[name] = source
-    ref = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
-    content = f'# Documentation source\n\nThis site was built from [{ref}]({REPOSITORY}/commit/{ref}). The PyPI release can differ from this source revision.\n'
+    try:
+        ref = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'],
+                                      text=True, stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        content = '# Documentation source\n\nBuilt from a source archive without Git revision metadata. Consult the packaged changelog for release changes.\n'
+    else:
+        content = f'# Documentation source\n\nThis site was built from [{ref}]({REPOSITORY}/commit/{ref}). The PyPI release can differ from this source revision.\n'
     files.append(File.generated(config, 'versions.md', content=content))
     return files
 

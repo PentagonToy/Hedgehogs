@@ -2,11 +2,13 @@
 
 ## Unreleased
 
+- Include documentation configuration, styles, scripts and reference data in source distributions, and support site builds without Git metadata.
+
+- Apply consistent, bounded typography to all three axes, separate automatic ticks at shared corners and fit 3D axis labels inside the canvas while preserving explicit settings.
+
 - Use the configured serif fallback for decision-tree text without repeated missing-Times font warnings.
 
 - Default inside legends use bounded text and spacing during figure finishing, including shared legends. Axis typography, panel geometry and explicit font choices remain fixed; marker and patch outlines match their plotted sources.
-
-- Apply proportional typography to 3D z-axis ticks and labels, preserving explicit font sizes.
 
 ## 0.0.4 — 18 October 2026
 

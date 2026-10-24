@@ -27,7 +27,7 @@ Use a TestPyPI API token through the upload prompt or a configured credential st
 
 ## Publish
 
-Confirm project-name ownership and authentication on PyPI before uploading. A missing project page does not guarantee that its name can be registered. The repository contains no automatic publication workflow or stored credentials.
+The repository contains no automatic publication workflow or stored credentials. Authenticate to the existing PyPI project before uploading.
 
 After approving the tested files, upload them through an authenticated environment:
 
@@ -37,4 +37,4 @@ python -m twine upload /path/to/release/dist/*
 
 [Trusted Publishing](https://docs.pypi.org/trusted-publishers/) supports a dedicated GitHub upload workflow. Configure both the workflow and PyPI publisher before enabling uploads.
 
-After publication, verify the installed version from PyPI, create the matching `v<version>` Git tag and GitHub release, and update the README installation instructions. Preserve published release tags and version files.
+After publication, verify the installed version from PyPI, create the matching `v<version>` Git tag and GitHub release, and confirm that installation instructions remain current. Preserve published release tags and version files.

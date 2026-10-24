@@ -220,6 +220,9 @@ def _signature(fig: Any) -> tuple[Any, ...]:
         parts.append((id(ax), tuple(ax.get_xlim()), tuple(ax.get_ylim()),
                       tuple(round(float(value), 10) for value in ax.get_position().bounds),
                       ax.get_visible(), ax.xaxis.labelpad, ax.yaxis.labelpad))
+        if getattr(ax, 'name', '') == '3d':
+            parts.append((tuple(ax.get_zlim()), ax.elev, ax.azim, getattr(ax, 'roll', 0.),
+                          tuple(ax.get_box_aspect()), ax.zaxis.labelpad))
         parts.extend((id(text), repr(text.get_position()), text.get_ha(), text.get_va()) for text in ax.texts)
         parts.extend((id(line), digest(line.get_xydata()), line.get_linewidth(),
                       line.get_markersize(), line.get_visible(), line.get_alpha()) for line in ax.lines)
@@ -383,6 +386,50 @@ def prepare(fig: Figure) -> None:
             refine_presentation(target, state, _bar_annotations)
             measure()
             renderer = target._get_renderer()
+    if state is not None and state.manage_margins:
+        # Projected 3D labels can extend beyond the box measured by tight_layout.
+        three_d = [ax for ax in target.axes if getattr(ax, 'name', '') == '3d' and ax.get_visible()]
+        if three_d:
+            target._hedgehogs_finish_layout_locked = True
+            try:
+                margin = renderer.points_to_pixels(3)
+                for _ in range(4):
+                    changed = False
+                    for ax in three_d:
+                        # Recheck projected tick text after the panel has moved.
+                        boxes = [(axis, tick.label1.get_window_extent(renderer))
+                                 for axis in ax._axis_map.values()
+                                 for tick in axis.majorTicks[:len(axis.get_majorticklocs())]
+                                 if tick.label1.get_visible() and tick.label1.get_text()]
+                        for axis in ax._axis_map.values():
+                            owned = state.values.get(axis, {}).get('finish_locator')
+                            if (owned is not None and axis.get_major_locator() is owned[0]
+                                    and owned[1] > 2
+                                    and any(box.overlaps(other) for i, (owner, box) in enumerate(boxes)
+                                            if owner is axis for j, (_, other) in enumerate(boxes) if i != j)):
+                                budget = owned[1] - 1
+                                owned[0].set_params(nbins=budget)
+                                state.values[axis]['finish_locator'] = (owned[0], budget)
+                                changed = True
+                        bounds = ax.get_tightbbox(renderer)
+                        if bounds is None:
+                            continue
+                        left = max(0., margin - bounds.x0) / target.bbox.width
+                        right = max(0., bounds.x1 + margin - target.bbox.width) / target.bbox.width
+                        bottom = max(0., margin - bounds.y0) / target.bbox.height
+                        top = max(0., bounds.y1 + margin - target.bbox.height) / target.bbox.height
+                        if max(left, right, bottom, top) < 1e-5:
+                            continue
+                        pos = ax.get_position()
+                        if pos.width > left + right and pos.height > bottom + top:
+                            ax.set_position([pos.x0 + left, pos.y0 + bottom,
+                                             pos.width - left - right, pos.height - bottom - top])
+                            changed = True
+                    if not changed:
+                        break
+                    measure()
+            finally:
+                target._hedgehogs_finish_layout_locked = False
     _separate_bar_labels(target, renderer)
     for ax in target.axes:
         _place_legend(target, ax, renderer)

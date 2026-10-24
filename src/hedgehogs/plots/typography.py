@@ -111,7 +111,8 @@ def refine_presentation(figure, state, annotations) -> None:
     for ax in [*axes, *colourbars]:
         properties = state.values.setdefault(ax, {})
         value_labels = annotations(ax)
-        dense = (getattr(ax, '_hedgehogs_dense_labels', False)
+        is_3d = getattr(ax, 'name', '') == '3d'
+        dense = (is_3d or getattr(ax, '_hedgehogs_dense_labels', False)
                  or bool(ax.images) or any(isinstance(item, QuadMesh) for item in ax.collections)
                  or len(value_labels) >= 6
                  or any(isinstance(axis.get_major_locator(), (FixedLocator, StrCategoryLocator))
@@ -164,14 +165,25 @@ def refine_presentation(figure, state, annotations) -> None:
                          and getattr(locator, '_nbins', None) == owned[1])
             if owned is not None and locator is owned[0] and not unchanged:
                 tick_properties['finish_locator'] = None
-            if name in ('x', 'y') and not hasattr(ax, '_colorbar') and axis.get_scale() == 'linear' and (automatic or unchanged):
+            if (name in ('x', 'y') or is_3d) and not hasattr(ax, '_colorbar') and axis.get_scale() == 'linear' and (automatic or unchanged):
                 length = (ax.bbox.width if name == 'x' else ax.bbox.height) / figure.dpi * 72
                 size = axis.get_major_ticks()[0].label1.get_fontsize()
                 budget = min(6, max(3, round(length / (size * (4.5 if name == 'x' else 2.5)))))
+                if is_3d:
+                    bounds = axis.line.get_window_extent(figure._get_renderer())
+                    length = (bounds.width ** 2 + bounds.height ** 2) ** .5 / figure.dpi * 72
+                    budget = min(5, max(2, int(length / (size * 2))))
                 if not unchanged or budget != owned[1]:
-                    locator = MaxNLocator(nbins=budget, steps=[1, 2, 2.5, 5, 10])
+                    locator = MaxNLocator(nbins=budget, steps=[1, 2, 2.5, 5, 10],
+                                          prune='both' if is_3d else None)
                     axis.set_major_locator(locator)
                     tick_properties['finish_locator'] = (locator, budget)
+            if is_3d:
+                expected_pad = float(plt.rcParams['axes.labelpad'])
+                target_pad = max(expected_pad, target * .9)
+                if managed(axis, 'labelpad', axis.labelpad, expected_pad, target_pad):
+                    axis.labelpad = target_pad
+                    tick_properties['labelpad'] = ((target_pad,), (target_pad,), 1.)
         for title in (ax.title, ax._left_title, ax._right_title):
             font(title, points(plt.rcParams['axes.titlesize']),
                  points(plt.rcParams['axes.titlesize']) * factor)

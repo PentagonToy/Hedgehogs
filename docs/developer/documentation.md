@@ -4,7 +4,7 @@ The independent [Hedgehogs site](https://pentagontoy.github.io/Hedgehogs/) publi
 
 ## Source ownership
 
-Edit `docs/`. The source preparation step maps `home.md` to the homepage and the documentation index to `overview.md`. It serves SVGs with content-hash revisions and points source links to GitHub. The [Sources page](https://pentagontoy.github.io/Hedgehogs/versions/) records the build commit.
+Edit `docs/`. The source preparation step maps `home.md` to the homepage and the documentation index to `overview.md`. It serves SVGs with content-hash revisions and points source links to GitHub. The [Sources page](https://pentagontoy.github.io/Hedgehogs/versions/) records the build commit when Git metadata is available; archive builds explicitly report its absence.
 
 `others/assets/icon.svg` is the canonical transparent symbol used by the header and favicon. The README and homepage use `banner_light.svg` and `banner_dark.svg` from the same directory, selecting one for the active theme. Check both themes after artwork changes. Header, favicon and site artwork URLs are versioned automatically by content hash. The site's warm colours are independent of scientific plot palettes.
 

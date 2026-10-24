@@ -272,7 +272,7 @@ An explicit `InlineBackend.close_figures=False` setting keeps figures open. Sele
 
 For GUI backends, `block=True` waits until the selected window closes; `False` returns immediately and requires the environment to process GUI events. The default follows interactive/IPython mode. Non-GUI backends do not enter a GUI event loop, even with `block=True`.
 
-Finishing adjusts default typography, numeric ticks and supported bar-value labels. For 3D axes, default z-axis labels and tick text receive the same font scaling as x and y, while explicit font sizes and the z-axis tick locator are preserved. It preserves data, limits and explicit settings. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
+Finishing adjusts default typography, automatic numeric ticks and supported bar-value labels while preserving data, limits and explicit settings. On 3D axes, it bounds font scaling, spaces axis labels and fits labels inside the canvas. Automatic linear ticks use projected lengths, omit endpoints and reduce density when labels overlap. Explicit fonts, label padding and tick locators stay unchanged. Only `loc="best"` searches for an internal legend position; named locations and anchors stay fixed. Remaining bar-label collisions produce a warning.
 
 ```python
 hdg.set_style()
