@@ -4,7 +4,7 @@ Read and copy the notebook code directly on the site. The pages import the origi
 
 | Example | Includes |
 | --- | --- |
-| [Plots](tutorials/plots.md) | Lines, scatter, contours, colour bars, panels and export |
+| [Plots](tutorials/plots.md) | Lines, prediction comparisons, model errors, 2D/3D fields, shared legends and export |
 | [Tables](tutorials/tables.md) | Formatting, sorting, DataFrames, updates and CSV/LaTeX export |
 | [Progress and terminal](tutorials/cli.md) | Iterable/manual progress, messages and redirected output |
 

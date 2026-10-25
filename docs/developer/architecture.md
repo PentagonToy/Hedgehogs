@@ -58,6 +58,8 @@ Default single-panel vertical colour bars use a locator that follows the parentâ
 3. Select automatic legend positions and separate supported bar-value labels.
 4. Freeze layout and render the complete figure.
 
+Automatic outside legends share one ownership check: managed placement can fit, while an explicit anchor remains author-owned. Fit text and reserve measured physical space in bounded passes before freezing layout; panel geometry is revisited only when managed decorations still clip.
+
 During measurement, automatic internal legends use a temporary upper-right position and do not reserve layout space. Restore their automatic request and layout flag on exit. Explicit locations and anchors keep their normal layout participation.
 
 Legend selection follows the [hybrid search](legend-experiment.md#limits-and-integration). Exclude the legend itself from collision checks. Transform visible scatter points once; ignore masked and non-finite coordinates without reducing valid data. Patch bounds, line intersections and offsets estimate occupancy.

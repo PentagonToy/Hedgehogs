@@ -47,6 +47,8 @@ def on_files(files, config):
         source = ROOT / 'tutorials' / f'{stem}.ipynb'
         name = f'tutorials/{stem}.md'
         introduction = f'Run the cells in order after [installation](../installation.md). Code comes from [the original notebook]({REPOSITORY}/blob/main/tutorials/{stem}.ipynb); saved outputs are historical previews. Output paths are relative to the working directory.'
+        if stem == 'plots':
+            introduction += '\n\nThe six examples cover lines, prediction comparisons, model errors, 2D and 3D fields, and shared legends. Draw with Matplotlib, then finish and export with Hedgehogs.'
         if stem == 'tables':
             introduction += ' This example also requires pandas.'
         content = render_notebook(source, title, introduction, config, files)

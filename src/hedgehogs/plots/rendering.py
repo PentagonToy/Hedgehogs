@@ -198,6 +198,8 @@ class _FigureStyle:
         return factors
 
     def apply(self, figure: Any, renderer=None) -> None:
+        if getattr(figure, '_hedgehogs_export_frozen', False):
+            return
         # The preliminary export draw has already fitted the full canvas.
         # A tight crop must retain those sizes, including fitted titles.
         if figure.transFigure._boxout is not figure.bbox:
@@ -429,6 +431,29 @@ class _FigureStyle:
                 layout.execute(figure)
                 for axis in figure.axes:
                     axis.get_tightbbox(renderer)
+            # Figure legends are not part of native tight-layout measurement.
+            # Reserve any remaining measured overflow without changing layouts
+            # that already leave the configured physical border margin.
+            for _ in range(4):
+                outside_boxes = [legend.get_window_extent(renderer) for legend in figure.legends
+                                 if getattr(legend, '_shared_placement', None) is not None
+                                 and legend._bbox_to_anchor is None
+                                 and legend.get_visible() and legend.get_in_layout()]
+                if not outside_boxes:
+                    break
+                outside_boxes.extend(box for axis in figure.axes if axis.get_visible()
+                                     if (box := axis.get_tightbbox(renderer)) is not None)
+                dx0 = max(0., margin - min(box.x0 for box in outside_boxes)) / figure.bbox.width
+                dx1 = max(0., max(box.x1 for box in outside_boxes) + margin - figure.bbox.width) / figure.bbox.width
+                dy0 = max(0., margin - min(box.y0 for box in outside_boxes)) / figure.bbox.height
+                dy1 = max(0., max(box.y1 for box in outside_boxes) + margin - figure.bbox.height) / figure.bbox.height
+                if max(dx0, dx1, dy0, dy1) < 1e-5 or left + dx0 >= right - dx1 or bottom + dy0 >= top - dy1:
+                    break
+                left, right, bottom, top = left + dx0, right - dx1, bottom + dy0, top - dy1
+                layout = TightLayoutEngine(pad=0.6, rect=(left, bottom, right, top))
+                layout.execute(figure)
+                for axis in figure.axes:
+                    axis.get_tightbbox(renderer)
             # Compact grids with fixed-width labels can retain a small edge
             # overflow. Move the panel centres inward without asking the
             # tight solver to re-expand the same labels on the next pass.
@@ -472,12 +497,15 @@ class _FigureStyle:
             properties["layout_last"] = {key: getattr(figure.subplotpars, key) for key in keys}
 
     def _fit_legends(self, figure: Any, renderer, factors: dict, fallback: float) -> None:
+        from .legend import _outside_placement
         finished = getattr(figure, '_hedgehogs_finished', False)
         for legend in figure.findobj(match=Legend):
-            if legend.axes is not None and legend._bbox_to_anchor is not None:
+            placement = _outside_placement(legend)
+            outside = finished and placement is not None
+            if legend.axes is not None and legend._bbox_to_anchor is not None and not outside:
                 continue  # Explicit external anchors retain the author's layout.
             if finished:
-                if getattr(legend, '_shared_domain', None) == 'outside':
+                if getattr(legend, '_shared_domain', None) == 'outside' and not outside:
                     continue
                 texts = [*legend.get_texts(), legend.get_title()]
                 if (getattr(legend, '_hedgehogs_font_explicit', False)
@@ -500,33 +528,67 @@ class _FigureStyle:
                 if custom:
                     continue
             container = legend.axes.bbox if legend.axes is not None else figure.bbox
-            if finished and legend.axes is None:
+            if outside:
+                container = figure.bbox
+            elif finished and legend.axes is None:
                 if getattr(legend, '_shared_domain', None) != 'inside':
                     continue
                 container = legend.get_bbox_to_anchor()
-            bounds = legend._legend_box.get_window_extent(renderer)
+            bounds = (legend.get_window_extent(renderer) if outside
+                      else legend._legend_box.get_window_extent(renderer))
             if bounds.width <= 0 or bounds.height <= 0:
                 continue
             factor = factors.get(legend.axes, fallback)
             width_fraction = 0.6 if finished or legend.axes is not None else 0.9
+            height_fraction = .4
+            if outside and placement is not None:
+                side, alignment = placement
+                width_fraction, height_fraction = ((.9, .4) if side in ('top', 'bottom') else (.4, .9))
+                # Measure free space from the resolved anchor in physical
+                # pixels; asymmetric labels can shift the panel centre.
+                anchor = legend.get_bbox_to_anchor()
+                margin = renderer.points_to_pixels(3.)
+                if side in ('top', 'bottom'):
+                    if alignment != .5:
+                        margin += renderer.points_to_pixels(legend.borderaxespad * legend._fontsize)
+                    before, after = anchor.x0 - container.x0 - margin, container.x1 - anchor.x0 - margin
+                    available = after if alignment == 0 else before if alignment == 1 else 2 * min(before, after)
+                    if available > 0:
+                        width_fraction = min(width_fraction, available / container.width)
+                else:
+                    available = 2 * min(anchor.y0 - container.y0 - margin, container.y1 - anchor.y0 - margin)
+                    if available > 0:
+                        height_fraction = min(height_fraction, available / container.height)
             fit = min(1.0, container.width * width_fraction / bounds.width,
-                      container.height * 0.4 / bounds.height)
+                      container.height * height_fraction / bounds.height)
             # Readability floors take priority over the soft geometry budgets.
             if finished:
-                fit = min(fit, (container.width * container.height * .2
-                                / (bounds.width * bounds.height)) ** .5)
+                if not outside:
+                    fit = min(fit, (container.width * container.height * .2
+                                    / (bounds.width * bounds.height)) ** .5)
                 base_size = FontProperties(size=plt.rcParams['legend.fontsize']).get_size_in_points()
                 floor = max(7., .75 * base_size)
             else:
                 floor = 6. * factor
-            fit = min(1.0, max(fit, floor / legend._fontsize))
+            current_font = (min((text.get_fontsize() for text in legend.get_texts()),
+                                default=legend._fontsize) if outside else legend._fontsize)
+            fit = min(1.0, max(fit, floor / current_font))
             if fit < 1.0:
                 scale = (self.values.get(legend, {}).get('legend_fontsize', (None, None, factor))[2]
                          if finished else factor)
                 for artist in legend.findobj():
                     if finished and not isinstance(artist, (Text, Legend, DrawingArea, PackerBase)):
                         continue
-                    self._artist(artist, scale * fit)
+                    artist_scale = scale
+                    if outside:
+                        # Text roles and packing boxes can have different
+                        # cached scales after finishing; shrink each from its
+                        # current physical size instead of the legend's scale.
+                        key = ('fontsize' if isinstance(artist, Text) else
+                               'legend_fontsize' if isinstance(artist, Legend) else
+                               'width' if isinstance(artist, DrawingArea) else 'pad')
+                        artist_scale = self.values.get(artist, {}).get(key, (None, None, 1.))[2]
+                    self._artist(artist, artist_scale * fit)
                     if finished:
                         properties = self.values.setdefault(artist, {})
                         if isinstance(artist, Text) and properties.get('finish_role.fontsize') is not None:
@@ -781,6 +843,16 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
     def savefig(figure, *args, **kwargs):
         if generation is not _hook_generation:
             return original_savefig(figure, *args, **kwargs)
+        from .legend import _outside_placement
+        if (getattr(figure, '_hedgehogs_finish_layout_locked', False)
+                and any(_outside_placement(item) is not None
+                        for item in figure.findobj(match=Legend))):
+            previous = getattr(figure, '_hedgehogs_export_frozen', False)
+            figure._hedgehogs_export_frozen = True
+            try:
+                return original_savefig(figure, *args, **kwargs)
+            finally:
+                figure._hedgehogs_export_frozen = previous
         style = getattr(figure, "_hedgehogs_style", None)
         if style is not None and _reference_size is not None:
             # An explicit Bbox export can skip the preliminary draw. Fit the

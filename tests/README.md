@@ -22,6 +22,10 @@ python -m pytest tests/plots/test_presentation.py -q -m presentation_smoke
 
 The three selected tests cover finishing with preserved data, explicit author choices and outline sizing. They are a development check, not a replacement for the full regression suite.
 
+## Before pushing rendering changes
+
+Run `python -m pytest tests/plots/test_outside_layout.py -q` before the full checks below. It covers both the default serif configuration and DejaVu Serif, with shared and panel legends saved as PNG and SVG. This catches fallback-font export drift on machines where Times is installed; it complements Linux CI rather than replacing it.
+
 ## Full validation
 
 ```bash
@@ -32,6 +36,27 @@ python -m mypy
 Run full validation once after functional changes have settled, or before release. Repeat it only after a relevant code change, failure or newly identified risk. Source unchanged since a passing run does not need another full run because documentation, a commit message or a Git hash changed.
 
 CI checks supported Python versions in parallel. Push settled changes once; allow CI to finish in the background during ordinary development. Confirm its outcome before tagging or publishing. Markdown-only pushes skip runtime CI; release checks still validate the built description and source archive.
+
+## Optional visual references
+
+Run representative image comparisons separately from the normal suite:
+
+```bash
+python -m pytest tests/visual --run-visual
+```
+
+Five fixed-font figures cover a square prediction comparison, internal legend, shared outside legend, square colour bar and 3D surface. Matplotlib's PNG comparison reports RMS differences and writes a diff image on failure; the tolerance is 0.5 on the 0–255 channel scale. A fast negative-control test verifies that a changed image is rejected.
+
+References are separated by Matplotlib version, FreeType version and DejaVu Serif font hash. An explicit visual run fails when the matching reference is absent; ordinary runs skip image comparisons. Pixel comparisons supplement data, geometry and explicit-setting assertions rather than replacing them.
+
+To create references from this checkout, render into a fresh review directory:
+
+```bash
+python tools/render_visual_regressions.py /path/to/review
+python -m pytest tests/visual --run-visual --visual-baseline-dir /path/to/review
+```
+
+Inspect the generated `index.html` and images before copying the environment directory's PNGs and `metadata.json` into `tests/visual/baseline_images/`. Tests never generate or update references, and the rendering tool refuses to overwrite an existing set. Do not replace a failing baseline merely to make the test pass. The [pytest-mpl image comparison approach](https://github.com/matplotlib/pytest-mpl) inspired this small suite; it uses existing Matplotlib and Pillow dependencies rather than requiring the plugin.
 
 ## Explicit load measurements
 

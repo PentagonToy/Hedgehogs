@@ -67,6 +67,7 @@ testpaths = ["tests"]
 markers = [
     "presentation_smoke: fast checks for finishing, author control and outlines",
     "load: expensive measurements requiring explicit --run-load",
+    "visual: environment-specific image comparisons requiring explicit --run-visual",
 ]
 
 [tool.mypy]

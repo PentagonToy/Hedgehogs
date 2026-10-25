@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.6 — 25 October 2026
+
+- Preserve finished layout and typography across export renderers, including outside legends with fallback serif fonts.
+
+- Reserve space for bar-end value labels on automatically scaled axes so labels clear the panel border. Preserve explicit axis limits.
+
+- Add opt-in, environment-specific visual references for five representative figures, with mismatch diffs and explicit baseline generation.
+
+- Fit automatic outside legends and bound default label enlargement for crowded layouts, including square prediction comparisons. Preserve data, limits, requested columns and explicit fonts or anchors.
+
 ## 0.0.5 — 24 October 2026
 
 - Include documentation configuration, styles, scripts and reference data in source distributions, and support site builds without Git metadata.

@@ -40,6 +40,7 @@ def refine_presentation(figure, state, annotations) -> None:
     from matplotlib.ticker import AutoLocator, MaxNLocator, FixedLocator
     from matplotlib.category import StrCategoryLocator
     from matplotlib.font_manager import FontProperties
+    from .legend import _outside_placement
     from matplotlib.lines import Line2D
     from matplotlib.collections import QuadMesh, PathCollection
     from matplotlib.container import Container
@@ -117,7 +118,13 @@ def refine_presentation(figure, state, annotations) -> None:
                  or len(value_labels) >= 6
                  or any(isinstance(axis.get_major_locator(), (FixedLocator, StrCategoryLocator))
                         and len(axis.get_major_ticks()) > 4 for axis in (ax.xaxis, ax.yaxis)))
-        panel_stamp = (stamp, dense)
+        legend = ax.get_legend()
+        managed_outside = (_outside_placement(legend) is not None
+                           or any(_outside_placement(item) is not None and ax in item._panels
+                                  for item in figure.legends))
+        panel_stamp = ((stamp, dense, tuple(axis.label.get_text() for axis in (ax.xaxis, ax.yaxis)))
+                       if managed_outside else (stamp, dense))
+
         previous_scale = properties.get('finish_panel_scale')
         if hasattr(ax, '_colorbar'):
             parent = getattr(ax._colorbar.mappable, 'axes', None)
@@ -130,6 +137,26 @@ def refine_presentation(figure, state, annotations) -> None:
             ratio = short_side / reference
             preferred = min(FINISH_MAX_PANEL_SCALE, max(1., sqrt(ratio))) if dense else min(FINISH_MAX_SPARSE_SCALE, max(1., ratio))
             factor = preferred if len(axes) == 1 and larger else 1.
+            properties['finish_panel_scale'] = (panel_stamp, factor)
+        if (managed_outside and not is_3d
+                and (previous_scale is None or previous_scale[0] != panel_stamp)):
+            # A long default label must not grow beyond its available panel
+            # and force a fixed-aspect plot to collapse during layout.
+            renderer = figure._get_renderer()
+            base_size = points(plt.rcParams['axes.labelsize'])
+            for axis, available, horizontal in ((ax.xaxis, ax.bbox.width, True),
+                                                 (ax.yaxis, ax.bbox.height, False)):
+                label = axis.label
+                label_values = state.values.get(label, {})
+                current = label.get_fontsize()
+                previous_font = label_values.get('finish_role.fontsize', base_size)
+                if (not label.get_text() or getattr(label, '_hedgehogs_font_explicit', False)
+                        or previous_font is None or abs(current - previous_font) > 1e-6):
+                    continue
+                bounds = label.get_window_extent(renderer)
+                length = (bounds.width if horizontal else bounds.height) * base_size / current
+                if length > 0:
+                    factor = min(factor, max(1., available * .95 / length))
             properties['finish_panel_scale'] = (panel_stamp, factor)
         previous_outline = properties.get('finish_outline_scale')
         if hasattr(ax, '_colorbar'):

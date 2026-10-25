@@ -1,0 +1,16 @@
+{
+  "environment": {
+    "matplotlib": "3.11.2",
+    "freetype": "2.14.3",
+    "font_sha256": "107244956e9962b9e96faccdc551825e0ae0898ae13737133e1b921a2fd35ffa"
+  },
+  "dpi": 100,
+  "source_sha256": "9fad3c267b1083cb8f47d2171bba81f1316f8b2321abfb89dcc9fc115dd63007",
+  "images": {
+    "parity": "e722b9430a14ca52b16274ca14a81f3fea95ec4e00d3d21347c4ef056fdf4cce",
+    "inside": "82971c77bdc87552e402d7492ebd4cff2d19697b79674d1440c90fafaa4f42a3",
+    "colourbar": "6a9fccd97e1489d02a7e8beb3917249d32a55c2f83f4b8e00e1d36ac900cb6da",
+    "shared": "cd633542926dd492caba4a7111cabf20a684493f0de163c4b96d5ea89edf7c43",
+    "surface": "0b8176ebd5ed7ef2612e2466dd897c5577388c06db306af9be73aae86b88d566"
+  }
+}

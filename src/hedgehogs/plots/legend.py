@@ -23,6 +23,16 @@ _OUTSIDE = {
 }
 
 
+def _outside_placement(legend) -> tuple[str, float] | None:
+    """Return managed placement; explicit anchors keep author ownership."""
+    if getattr(legend, '_follow_domain', False):
+        return legend._domain_side, legend._domain_alignment
+    placement = getattr(legend, '_shared_placement', None)
+    if placement is not None and legend._bbox_to_anchor is None:
+        return placement[1], placement[2]
+    return None
+
+
 class _OutsideLegend(Legend):
     def __init__(self, axes, handles, labels, placement, ncol, title):
         location, self._domain_side, self._domain_alignment = placement

@@ -172,6 +172,37 @@ def _separate_bar_labels(fig: Any, renderer: Any) -> None:
             placed.append(label.get_window_extent(renderer))
 
 
+def _fit_bar_labels(fig: Any, renderer: Any) -> bool:
+    """Reserve measured label space only on automatically scaled bar axes."""
+    changed = False
+    for ax in fig.axes:
+        labels = _bar_annotations(ax)
+        if not labels:
+            continue
+        for horizontal in (False, True):
+            if not (ax.get_autoscalex_on() if horizontal else ax.get_autoscaley_on()):
+                continue
+            selected = [label for label in labels
+                        if (label.get_ha() in ('left', 'right')) == horizontal]
+            if not selected:
+                continue
+            index = 0 if horizontal else 1
+            low, high = (ax.bbox.intervalx if horizontal else ax.bbox.intervaly)
+            bounds = [label.get_window_extent(renderer) for label in selected]
+            margin = renderer.points_to_pixels(4.)
+            lower = min(box.x0 if horizontal else box.y0 for box in bounds) - margin
+            upper = max(box.x1 if horizontal else box.y1 for box in bounds) + margin
+            if lower >= low and upper <= high:
+                continue
+            transform = ax.transData.inverted()
+            points = transform.transform([(min(low, lower), min(low, lower)),
+                                          (max(high, upper), max(high, upper))])[:, index]
+            setter = ax.set_xlim if horizontal else ax.set_ylim
+            setter((points[0], points[1]), auto=True)
+            changed = True
+    return changed
+
+
 def _retain_edits(fig: Any) -> None:
     state = getattr(fig, '_hedgehogs_style', None)
     if state is None:
@@ -236,7 +267,11 @@ def _signature(fig: Any) -> tuple[Any, ...]:
                       patch.get_linewidth(), patch.get_visible(), patch.get_alpha()) for patch in ax.patches)
         legend = ax.get_legend()
         if legend is not None:
-            parts.append((legend._loc, tuple(round(float(value), 8) for value in legend.get_bbox_to_anchor().bounds)))
+            from .legend import _outside_placement
+            placement = _outside_placement(legend)
+            anchor = (placement if placement is not None else
+                      tuple(round(float(value), 8) for value in legend.get_bbox_to_anchor().bounds))
+            parts.append((legend._loc, anchor))
     return tuple(parts)
 
 
@@ -387,6 +422,23 @@ def prepare(fig: Figure) -> None:
             measure()
             renderer = target._get_renderer()
     if state is not None and state.manage_margins:
+        from .legend import _outside_placement
+        legends = [ax.get_legend() for ax in target.axes] + list(target.legends)
+        outside = [legend for legend in legends if _outside_placement(legend) is not None
+                   and legend.get_visible() and legend.get_in_layout()]
+        # Fitting text can change its reserved space. Settle the coupled
+        # constraints before freezing, only when managed content still clips.
+        if outside:
+            for _ in range(3):
+                boxes = [ax.get_tightbbox(renderer, bbox_extra_artists=[])
+                         for ax in target.axes if ax.get_visible()]
+                boxes += [legend.get_window_extent(renderer) for legend in outside]
+                if all(box is None or (box.x0 >= target.bbox.x0 and box.y0 >= target.bbox.y0
+                                       and box.x1 <= target.bbox.x1 and box.y1 <= target.bbox.y1)
+                       for box in boxes):
+                    break
+                measure()
+    if state is not None and state.manage_margins:
         # Projected 3D labels can extend beyond the box measured by tight_layout.
         three_d = [ax for ax in target.axes if getattr(ax, 'name', '') == '3d' and ax.get_visible()]
         if three_d:
@@ -448,6 +500,10 @@ def prepare(fig: Figure) -> None:
                     measure()
             finally:
                 target._hedgehogs_finish_layout_locked = False
+    for _ in range(3):
+        if not _fit_bar_labels(target, renderer):
+            break
+        target.canvas.draw()
     _separate_bar_labels(target, renderer)
     for ax in target.axes:
         _place_legend(target, ax, renderer)

@@ -5,4 +5,4 @@ recursive-include docs *.md *.svg *.css *.js
 recursive-include others *.svg *.json
 recursive-include tutorials *.ipynb
 recursive-include tools *.py *.md
-recursive-include tests *.py *.md
+recursive-include tests *.py *.md *.png *.json

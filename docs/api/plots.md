@@ -234,7 +234,7 @@ Returns an editable `Legend`. Outside `upper` and `lower` locations clear titles
 
 `shared=True` deduplicates labels in panel order and centres on the panel grid. Marker styles follow the plotted data. Conflicting styles warn and use the first; existing panel legends remain. Single-panel figures also work.
 
-Default inside legends fit a bounded space budget, including shared legends, while preserving axis typography and panel geometry. Marker and patch outlines follow the plotted sources. Explicit font sizes and outside placement remain under user control.
+Default inside legends fit a bounded space budget, including shared legends, while preserving axis typography and panel geometry. Automatic outside legends fit a canvas-based budget without changing the requested location or column count; long default axis labels limit text enlargement to preserve plotting space. Marker and patch outlines follow the plotted sources. Explicit font sizes and anchors remain under user control.
 
 ```python
 # Current panel
@@ -355,3 +355,5 @@ hdg.plots.show()
 For Seaborn figure-level plots, pass the returned figure when selecting one among several open figures: `hdg.plots.show(grid.figure)`. Native facet, joint and clustered layouts retain their explicitly selected canvas geometry. External colour maps and statistical annotations remain library-owned.
 
 Checks cover representative Seaborn, scikit-learn, pandas and statsmodels plots. Compatibility depends on library versions and plot types. Very long labels or large category counts may need an explicit canvas.
+
+Bar-end labels created with Matplotlib’s `bar_label()` receive measured space on automatically scaled axes during finishing. Explicit axis limits remain unchanged.
