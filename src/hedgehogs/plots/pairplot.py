@@ -235,8 +235,6 @@ def pairplot(
             ax.yaxis.label.set_fontsize(label_font * factor)
             ax.tick_params(axis='x', labelsize=x_tick_font * factor)
             ax.tick_params(axis='y', labelsize=y_tick_font * factor)
-            for spine in ax.spines.values():
-                spine.set_linewidth(plt.rcParams['axes.linewidth'] * factor)
             for collection in ax.collections:
                 collection.set_sizes([plt.rcParams['lines.markersize'] ** 2 * factor ** 2])
                 collection.set_linewidths([plt.rcParams['lines.markeredgewidth'] * factor])

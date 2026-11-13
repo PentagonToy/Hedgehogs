@@ -54,7 +54,9 @@ def test_pyplot_preserves_reference_proportions(scale, font_family):
     size = hdg.figsize()
     baseline = sine_figure(size)
     enlarged = sine_figure(tuple(value * scale for value in size))
-    actual, expected = dimensions(*enlarged), dimensions(*baseline) * scale
+    base = dimensions(*baseline)
+    actual, expected = dimensions(*enlarged), base * scale
+    expected[6] = base[6]
     assert actual[:10] == pytest.approx(expected[:10])
     # Raster font hinting rounds glyphs to pixels rather than exact point ratios.
     assert actual[10:] == pytest.approx(expected[10:], abs=2 * scale)
@@ -72,7 +74,9 @@ def test_resize_and_repeated_draws_do_not_accumulate(font_family):
     for _ in range(5):
         fig.canvas.draw()
         actual = dimensions(fig, ax, line, legend)
-        assert actual[:10] == pytest.approx(base[:10] * 1.5)
+        expected = base[:10] * 1.5
+        expected[6] = base[6]
+        assert actual[:10] == pytest.approx(expected)
         assert actual[10:] == pytest.approx(base[10:] * 1.5, abs=3)
     fig.set_size_inches(*hdg.figsize())
     fig.canvas.draw()

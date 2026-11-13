@@ -1,5 +1,6 @@
 """Finishing, collision scoring, author control, and repeated output."""
 import io
+from xml.etree import ElementTree
 
 import matplotlib
 matplotlib.use('Agg')
@@ -494,6 +495,25 @@ def test_default_line_and_legend_strokes_follow_frame_but_explicit_widths_surviv
     handles = legend.legend_handles if hasattr(legend, 'legend_handles') else legend.legendHandles
     assert handles[0].get_linewidth() == default.get_linewidth()
     assert legend._loc == 2
+
+
+@pytest.mark.parametrize('size', [(2.24, 2.2), (4.48, 4.4), (8, 3)])
+def test_frame_width_is_fixed_during_finishing_and_export(size):
+    with plt.rc_context({'axes.linewidth': 1.3}):
+        fig, ax = plt.subplots(figsize=size)
+        ax.plot([0, 1], [0, 1])
+        ax.spines['right'].set_linewidth(2.5)
+        ax.spines['right'].set_gid('right-frame')
+        for fmt in ('png', 'svg'):
+            prepare(fig)
+            output = io.BytesIO()
+            fig.savefig(output, format=fmt, bbox_inches='tight')
+            assert [ax.spines[side].get_linewidth() for side in ('left', 'bottom', 'top')] == [1.3] * 3
+            assert ax.spines['right'].get_linewidth() == 2.5
+            if fmt == 'svg':
+                svg = ElementTree.fromstring(output.getvalue())
+                right_frame = next(group for group in svg.iter() if group.get('id') == 'right-frame')
+                assert 'stroke-width: 2.5' in right_frame[0].get('style', '')
 
 
 @pytest.mark.parametrize('logarithmic', [False, True])

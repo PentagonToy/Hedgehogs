@@ -17,7 +17,8 @@ def test_default_style_uses_science_single_column():
     assert plt.rcParams["xtick.labelsize"] == 9.5
     assert plt.rcParams["legend.fontsize"] == 9.5
     assert plt.rcParams["lines.markersize"] == pytest.approx(16 ** 0.5)
-    assert plt.rcParams["axes.linewidth"] == .9
+    assert plt.rcParams["axes.linewidth"] == 1.4
+    assert plt.rcParams["xtick.major.width"] == .72
     assert plt.rcParams["lines.linewidth"] == 1.1
     assert plt.rcParams["axes.xmargin"] == 0.05
     assert plt.rcParams["axes.ymargin"] == 0.05
@@ -27,8 +28,10 @@ def test_default_style_uses_science_single_column():
 def test_custom_style_can_opt_in_to_width_scaling():
     hdg.set_style(base_fontsize=10.0, figure_size=(6.0, 4.0), auto_scale=True)
     assert plt.rcParams["font.size"] == 10.0
+    frame_width = plt.rcParams["axes.linewidth"]
     hdg.set_style(base_fontsize=10.0, figure_size=(3.0, 2.0), auto_scale=True)
     assert plt.rcParams["font.size"] < 10.0
+    assert plt.rcParams["axes.linewidth"] == frame_width
     hdg.reset_style()
 
 

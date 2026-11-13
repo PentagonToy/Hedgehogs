@@ -22,6 +22,7 @@ from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, PackerBase
 from matplotlib.patches import Patch, Rectangle
+from matplotlib.spines import Spine
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
@@ -625,7 +626,7 @@ class _FigureStyle:
         if isinstance(artist, Text):
             self._property(artist, 'fontsize', dynamic.get_fontsize,
                            dynamic.set_fontsize, factor)
-        if isinstance(artist, (Line2D, Patch)):
+        if isinstance(artist, (Line2D, Patch)) and not isinstance(artist, Spine):
             self._property(artist, 'linewidth', dynamic.get_linewidth,
                            dynamic.set_linewidth, factor)
         if isinstance(artist, Line2D):

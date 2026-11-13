@@ -5,11 +5,15 @@ The Science canvas is 2.24 × 2.20 inches; its default subplot occupies
 rather than panel count or the complete canvas including legends.
 """
 
+from functools import cache
+
+
 REFERENCE_CANVAS_INCHES = (2.24, 2.20)
 REFERENCE_LABEL_POINTS = 10.5
 REFERENCE_TICK_POINTS = 9.5
 REFERENCE_LEGEND_POINTS = 9.5
-REFERENCE_AXES_WIDTH = .9
+REFERENCE_AXES_WIDTH = 1.4
+REFERENCE_TICK_WIDTH = .72
 REFERENCE_LINE_WIDTH = 1.1
 REFERENCE_MARKER_AREA = 16.
 REFERENCE_MARKER_EDGE_WIDTH = .5
@@ -54,7 +58,8 @@ def refine_presentation(figure, state, annotations) -> None:
     reference = min(state.reference_size[0] * .72, state.reference_size[1] * .66)
     stamp = (tuple(figure.get_size_inches()), state.reference_size, len(axes))
 
-    def points(value):
+    @cache
+    def points(value) -> float:
         return FontProperties(size=value).get_size_in_points()
 
     def managed(owner, key, current, expected, target):
@@ -222,15 +227,6 @@ def refine_presentation(figure, state, annotations) -> None:
         for text in value_labels:
             font(text, points(plt.rcParams['font.size']),
                  points(plt.rcParams['xtick.labelsize']) * value_factor)
-        for spine in ax.spines.values():
-            properties = state.values.setdefault(spine, {})
-            key = 'finish_role.linewidth'
-            if key in properties and properties[key] is None:
-                continue
-            width = float(plt.rcParams['axes.linewidth']) * outline
-            if managed(spine, 'linewidth', spine.get_linewidth(), float(plt.rcParams['axes.linewidth']), width):
-                spine.set_linewidth(width)
-                properties['linewidth'] = ((width,), (width,), 1.)
         for patch in ax.patches:
             stroke(patch, 'linewidth', float(plt.rcParams['patch.linewidth']), outline)
         for collection in ax.collections:

@@ -9,7 +9,8 @@ from . import rendering
 from .typography import (REFERENCE_CANVAS_INCHES, REFERENCE_LABEL_POINTS,
                          REFERENCE_AXES_WIDTH, REFERENCE_LINE_WIDTH,
                          REFERENCE_MARKER_AREA, REFERENCE_MARKER_EDGE_WIDTH,
-                         REFERENCE_TICK_POINTS, REFERENCE_LEGEND_POINTS)
+                         REFERENCE_TICK_POINTS, REFERENCE_TICK_WIDTH,
+                         REFERENCE_LEGEND_POINTS)
 
 
 _active_palette: Palette | None = None
@@ -94,7 +95,8 @@ def set_style(
     tick_fs = fs - (REFERENCE_LABEL_POINTS - REFERENCE_TICK_POINTS) * s
     legend_fs = fs - (REFERENCE_LABEL_POINTS - REFERENCE_LEGEND_POINTS) * s
     lw    = linewidth * s
-    axis_lw = lw * REFERENCE_AXES_WIDTH / REFERENCE_LINE_WIDTH
+    axis_lw = linewidth * REFERENCE_AXES_WIDTH / REFERENCE_LINE_WIDTH
+    tick_lw = lw * REFERENCE_TICK_WIDTH / REFERENCE_LINE_WIDTH
     elw   = lw * REFERENCE_MARKER_EDGE_WIDTH / REFERENCE_LINE_WIDTH
     ms    = max(_MIN_MARKERSIZE, _MARKER_TO_FONT_RATIO * fs)
     major = 4.0 * s
@@ -145,8 +147,8 @@ def set_style(
         "ytick.major.size":      major,
         "xtick.minor.size":      minor,
         "ytick.minor.size":      minor,
-        "xtick.major.width":     axis_lw * 0.8,
-        "ytick.major.width":     axis_lw * 0.8,
+        "xtick.major.width":     tick_lw,
+        "ytick.major.width":     tick_lw,
         "xtick.minor.visible":   False,
         "ytick.minor.visible":   False,
         "xtick.major.pad":       4.0 * s,

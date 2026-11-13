@@ -179,7 +179,7 @@ def test_custom_style_sizes_and_subsequent_artist_edits_remain_available():
     factor = max(1., panel_scale(axes[1, 0]))
     points = axes[1, 0].collections[0]
     assert points.get_sizes() == pytest.approx([64 * factor ** 2], rel=.01)
-    assert axes[1, 0].spines['left'].get_linewidth() == pytest.approx(1.3 * factor, rel=.01)
+    assert axes[1, 0].spines['left'].get_linewidth() == pytest.approx(1.3)
     assert fig.legends[0].get_texts()[0].get_fontsize() == pytest.approx(11 * factor, rel=.01)
     points.set_sizes([10000])
     axes[1, 0].xaxis.label.set_fontsize(25)

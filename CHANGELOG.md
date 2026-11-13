@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Keep plot frames at a consistent thickness across figure sizes, including pairplots and exports. The default is 1.4 pt, and explicit axis spine widths are preserved.
+
+- Reuse resolved font sizes during figure finishing to reduce repeated work on multi-panel figures.
+
+- Refresh the saved bar-chart preview in the plotting tutorial.
+
 ## 0.0.6 — 25 October 2026
 
 - Preserve finished layout and typography across export renderers, including outside legends with fallback serif fonts.
