@@ -145,6 +145,46 @@ def test_explicit_shrink_and_custom_colourbar_axes_keep_native_locator():
     assert type(custom.ax.get_axes_locator()).__name__ == '_ColorbarAxesLocator'
 
 
+def test_shared_row_colourbars_match_plotting_boxes_on_show_and_save(tmp_path):
+    fig, axes = plt.subplots(2, 3, figsize=(12, 6), layout='constrained')
+    bars = []
+    for row in axes:
+        for ax in row:
+            image = ax.pcolormesh(np.arange(28).reshape(4, 7))
+            ax.set_aspect('equal')
+        bars.append(fig.colorbar(image, ax=row))
+
+    draws = []
+
+    def inspect(event):
+        for row, bar in zip(axes, bars):
+            for ax in row:
+                assert (bar.ax.bbox.y0, bar.ax.bbox.y1) == pytest.approx((ax.bbox.y0, ax.bbox.y1))
+        draws.append(event.canvas)
+
+    fig.canvas.mpl_connect('draw_event', inspect)
+    hdg.plots.show(block=False)
+    assert draws
+    draws.clear()
+    hdg.plots.save(tmp_path / 'shared.pdf', fig=fig)
+    assert draws
+
+
+@pytest.mark.parametrize('case', ['different heights', 'multiple rows', 'shrink'])
+def test_shared_colourbar_keeps_native_height_without_aligned_default_parents(case):
+    shape = (2, 1) if case == 'multiple rows' else (1, 2)
+    fig, axes = plt.subplots(*shape, figsize=(6, 6), layout='constrained')
+    for ax in axes:
+        image = ax.imshow(np.zeros((2, 8)))
+    if case == 'different heights':
+        axes[0].set_ylim(0, 1)
+    options = {'shrink': .5} if case == 'shrink' else {}
+    bar = fig.colorbar(image, ax=axes, **options)
+
+    fig.canvas.draw()
+    assert bar.ax.bbox.height > max(ax.bbox.height for ax in axes)
+
+
 def test_colourbar_locator_stays_retired_after_reset_and_reenable():
     fig, ax = plt.subplots(figsize=(2.24, 2.2))
     ax.set_box_aspect(1)

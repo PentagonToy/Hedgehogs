@@ -112,4 +112,4 @@ These panels use bounded dense typography, so enlargement does not recreate text
 
 Figure legends clearly placed along the left or right edge reserve a side strip during managed grid layout, matching the existing top/bottom reservation. This prevents native external grid legends from covering the last panel; legend locations remain unchanged.
 
-Default vertical colour bars for one parent panel follow its resolved plotting-box height, including fixed box aspects. Non-default shrink, custom colour-bar axes or anchors, shared bars and extension markers retain native placement.
+Default vertical colour bars follow the resolved plotting-box height in single-panel figures. Shared bars follow the same rule when all parent panels have matching top and bottom edges. The locator measures panel bounds after aspect adjustment. Explicit shrink or anchor settings, custom colour-bar axes and extension markers retain Matplotlib placement.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Align default shared vertical colour bars with their panels when the plotting boxes have matching top and bottom edges.
+
 - Keep plot frames at a consistent thickness across figure sizes, including pairplots and exports. The default is 1.4 pt, and explicit axis spine widths are preserved.
 
 - Reuse resolved font sizes during figure finishing to reduce repeated work on multi-panel figures.

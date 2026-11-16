@@ -181,7 +181,7 @@ hdg.plots.square(ax=axes[0, 0])     # One panel
 hdg.plots.square(False)            # Release all panels
 ```
 
-Default single-panel vertical colour bars follow the plotting-box height. Custom placement, shared or horizontal bars and extension markers retain Matplotlib behaviour.
+Default vertical colour bars follow the plotting-box height for single-panel figures and for shared bars whose panels have matching top and bottom edges. Explicit shrink or anchor settings, custom colour-bar axes, horizontal bars and extension markers retain Matplotlib placement.
 
 ## Other adjustments
 

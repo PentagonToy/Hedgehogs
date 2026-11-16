@@ -2,7 +2,7 @@
 
 from functools import wraps
 from contextlib import contextmanager
-from math import isfinite
+from math import isclose, isfinite
 from numbers import Real
 from typing import Any, Callable, cast
 from weakref import WeakKeyDictionary
@@ -28,10 +28,10 @@ from matplotlib.transforms import Bbox
 
 
 class _ParentHeightColorbarLocator:
-    """Match a default single-panel colour bar to its resolved plotting box."""
+    """Match a default vertical colour bar to aligned plotting boxes."""
 
-    def __init__(self, parent: Axes, original: Any, generation: Any):
-        self.parent = parent
+    def __init__(self, parents: list[Axes], original: Any, generation: Any):
+        self.parents = parents
         self.original = original
         self.generation = generation
 
@@ -41,12 +41,21 @@ class _ParentHeightColorbarLocator:
         if (self.generation is not _hook_generation or colourbar is None
                 or colourbar.extend != 'neither'):
             return position
-        figure = self.parent.figure
-        panels = [panel for panel in figure.axes if not hasattr(panel, '_colorbar')]
-        if panels != [self.parent]:
-            return position
-        bounds = self.parent.get_position()
-        return Bbox.from_bounds(position.x0, bounds.y0, position.width, bounds.height)
+
+        first, *others = self.parents
+        if not others:
+            panels = [panel for panel in first.figure.axes if not hasattr(panel, '_colorbar')]
+            if panels != [first]:
+                return position
+
+        bounds = first.get_position()
+        for parent in others:
+            panel = parent.get_position()
+            if not (isclose(panel.y0, bounds.y0, abs_tol=1e-6)
+                    and isclose(panel.y1, bounds.y1, abs_tol=1e-6)):
+                return position
+
+        return Bbox.from_extents(position.x0, bounds.y0, position.x1, bounds.y1)
 
     def get_subplotspec(self):
         return self.original.get_subplotspec()
@@ -881,12 +890,12 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
         info = getattr(result.ax, '_colorbar_info', {})
         parents = info.get('parents', [])
         panels = [axis for axis in figure.axes if not hasattr(axis, '_colorbar')]
-        if (style is not None and cax is None and result.orientation == 'vertical'
+        if (style is not None and cax is None and parents and result.orientation == 'vertical'
                 and result.extend == 'neither' and info.get('shrink', 1) == 1
-                and not any(key in kwargs for key in ('anchor', 'panchor'))
-                and len(parents) == 1 and panels == parents):
+                and not any(key in kwargs for key in ('shrink', 'anchor', 'panchor'))
+                and (len(parents) > 1 or panels == parents)):
             locator = result.ax.get_axes_locator()
-            result.ax.set_axes_locator(_ParentHeightColorbarLocator(parents[0], locator, generation))
+            result.ax.set_axes_locator(_ParentHeightColorbarLocator(parents, locator, generation))
         return result
 
     _installed_colorbar = colorbar
