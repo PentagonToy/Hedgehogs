@@ -215,8 +215,7 @@ def test_titles_are_centred_for_any_column_count(ncol, shared, domain):
         title = result.get_title().get_window_extent(renderer)
         frame = result.get_window_extent(renderer)
         assert (title.x0 + title.x1) / 2 == pytest.approx((frame.x0 + frame.x1) / 2, abs=.5)
-        ratio = plt.rcParams['font.size'] / plt.rcParams['legend.fontsize']
-        assert result.get_title().get_fontsize() == pytest.approx(result.get_texts()[0].get_fontsize() * ratio)
+        assert result.get_title().get_fontsize() == pytest.approx(result.get_texts()[0].get_fontsize())
 
 
 def test_multiline_title_stays_centred_through_exports(tmp_path):

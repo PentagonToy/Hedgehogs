@@ -13,7 +13,7 @@ python -m twine check --strict /path/to/release/dist/*
 
 Verify the wheel contains the package and `py.typed`. The source archive also contains docs, tests, tutorials and rendering tools. Check imports and figure export from an installed wheel outside the checkout, then build a wheel from the source archive.
 
-The Tests workflow checks Python 3.10, 3.12 and 3.13 and distribution files. Its `hedgehogs-distributions` artefact retains release candidates. Markdown-only pushes skip runtime CI; request a manual run before release if needed.
+Run the Tests workflow manually to qualify a release before tagging. Manual runs and `v*` tags run the full Python matrix, check the distributions and publish them as the `hedgehogs-distributions` workflow artefact. Routine branch and pull request checks do not build release artefacts.
 
 ## TestPyPI
 

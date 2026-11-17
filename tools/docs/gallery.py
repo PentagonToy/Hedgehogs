@@ -1,37 +1,70 @@
-"""Render committed gallery examples explicitly from the checked-out package."""
+"""Run the plotting notebook and refresh its saved previews and gallery."""
+
+import argparse
+import base64
+from io import BytesIO
+import json
+import os
 from pathlib import Path
 import sys
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-import hedgehogs as hdg
+matplotlib.use("module://matplotlib_inline.backend_inline")
+
+from matplotlib.figure import Figure
 
 
-def example(palette_name, output):
-    size = hdg.figsize("science", "single")
-    hdg.set_style(figure_size=size, palette=palette_name)
-    colours = hdg.get_palette(palette_name)
-    matplotlib.rcParams["svg.hashsalt"] = "hedgehogs-gallery"
-    x = np.linspace(0, 1, 25)
-    y = 2 * x + 0.1 * np.sin(20 * x)
-    fig, ax = plt.subplots(figsize=size)
-    ax.scatter(x, y, color=colours[0], label="Data")
-    ax.plot(x, 2 * x, color=colours[1], label="Model")
-    ax.set(xlabel="x", ylabel="y")
-    ax.legend()
-    hdg.plots.save(output, fig=fig, bbox_inches=None, metadata={"Date": None})
-    output.write_text("\n".join(line.rstrip() for line in output.read_text().splitlines()) + "\n")
-    plt.close(fig)
-    hdg.reset_style()
+def refresh(workspace: Path) -> None:
+    source = ROOT / "tutorials/plots.ipynb"
+    notebook = json.loads(source.read_text())
+    destination = ROOT / "docs/assets/gallery"
+    figures: list[bytes] = []
+
+    def capture(figure: Figure) -> None:
+        buffer = BytesIO()
+        figure.savefig(buffer, format="png", dpi=150, bbox_inches="tight",
+                       transparent=False, facecolor="white")
+        figures.append(buffer.getvalue())
+
+    original_directory = Path.cwd()
+    with TemporaryDirectory(prefix="plots-", dir=workspace) as workdir:
+        os.chdir(workdir)
+        try:
+            namespace = {"__name__": "__main__"}
+            with patch("IPython.display.display", capture):
+                count = 0
+                for cell in notebook["cells"]:
+                    if cell["cell_type"] != "code":
+                        continue
+                    count += 1
+                    first = len(figures)
+                    code = "".join(cell["source"])
+                    exec(compile(code, f"{source.name}:{count}", "exec"), namespace)
+                    cell["execution_count"] = count
+                    cell["outputs"] = [
+                        {"data": {"image/png": base64.b64encode(png).decode("ascii")},
+                         "metadata": {}, "output_type": "display_data"}
+                        for png in figures[first:]
+                    ]
+        finally:
+            os.chdir(original_directory)
+
+    if not figures:
+        raise RuntimeError("The plotting notebook did not display any figures.")
+
+    destination.mkdir(parents=True, exist_ok=True)
+    for index, png in enumerate(figures, 1):
+        (destination / f"plots-{index}.png").write_bytes(png)
+    source.write_text(json.dumps(notebook, ensure_ascii=False, indent=1) + "\n")
 
 
 if __name__ == "__main__":
-    destination = ROOT / "docs/assets/gallery"
-    destination.mkdir(parents=True, exist_ok=True)
-    for palette in ("okabe-ito", "paul-tol-bright", "ibm"):
-        example(palette, destination / f"{palette}.svg")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--workspace", type=Path, required=True,
+                        help="Existing directory for temporary notebook outputs")
+    refresh(parser.parse_args().workspace.resolve())

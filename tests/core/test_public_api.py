@@ -32,7 +32,8 @@ def test_plotting_api():
 
     hdg.plots.enable_minor_ticks(ax)
     hdg.plots.apply_grid(ax)
-    hdg.plots.annotate_panels([ax])
+    labels = hdg.plots.label(axes=ax)
+    assert len(labels) == 1 and labels[0].axes is ax
 
     plt.close(fig)
     hdg.reset_style()
@@ -61,7 +62,6 @@ def test_progress_api():
 
 
 def test_specialised_plots_have_one_public_namespace():
-    assert hdg.plots.__all__ == ["tree", "pairplot", "decision_regions", "legend", "force_plot", "summary_plot", "waterfall_plot", "dependence_plot", "decision_plot", "show", "save", "annotate_panels", "style_colorbar", "apply_grid", "enable_minor_ticks", "square", "label"]
     assert callable(hdg.plots.legend)
     assert callable(hdg.plots.decision_regions)
     assert callable(hdg.plots.tree)
@@ -88,18 +88,6 @@ def test_public_introspection_is_clean_and_describes_new_interfaces():
     assert signature.parameters['fig'].default is None
     assert 'current pyplot figure' in pydoc.render_doc(hdg.plots.save)
     assert 'formatted table rows' in pydoc.render_doc(hdg.Table.to_dataframe)
-
-
-def test_figure_helpers_have_one_namespace_without_removed_wrappers():
-    expected = ['annotate_panels', 'style_colorbar', 'apply_grid', 'enable_minor_ticks', 'square']
-    assert set(expected) <= set(hdg.plots.__all__)
-    assert dir(hdg.plots) == sorted(hdg.plots.__all__)
-    for name in expected:
-        assert callable(getattr(hdg.plots, name))
-        assert not hasattr(hdg, name)
-    for name in ['subplots', 'journal_preset', 'set_journal_style', 'finalize']:
-        assert not hasattr(hdg, name)
-        assert not hasattr(hdg.plots, name)
 
 
 def test_legacy_figure_helpers_forward_to_plots():

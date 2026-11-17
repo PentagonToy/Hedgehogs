@@ -41,13 +41,14 @@ def test_square_fits_allocated_space_preserves_canvas_and_limits(size, tmp_path)
 def test_grid_with_colourbar_and_constrained_layout(tmp_path):
     fig, axes = plt.subplots(1, 2, figsize=(8, 4), layout='constrained')
     image = axes[0].imshow(np.arange(12).reshape(3, 4), aspect='auto')
-    fig.colorbar(image, ax=axes[0])
+    bar = fig.colorbar(image, ax=axes[0])
     axes[1].plot([0, 10], [0, 1])
     hdg.plots.square(ax=axes)
     hdg.plots.show(block=False)
     for ax in axes:
         assert ax.bbox.width == pytest.approx(ax.bbox.height)
-    assert fig.axes[-1].get_box_aspect() != 1
+    assert bar.ax.get_box_aspect() != 1
+    assert (bar.ax.bbox.y0, bar.ax.bbox.y1) == pytest.approx((axes[0].bbox.y0, axes[0].bbox.y1))
     fig.savefig(tmp_path / 'grid.pdf')
     hdg.plots.square(False, ax=axes)
     assert all(ax.get_box_aspect() is None for ax in axes)
@@ -146,11 +147,11 @@ def test_explicit_shrink_and_custom_colourbar_axes_keep_native_locator():
 
 
 def test_shared_row_colourbars_match_plotting_boxes_on_show_and_save(tmp_path):
-    fig, axes = plt.subplots(2, 3, figsize=(12, 6), layout='constrained')
+    fig, axes = plt.subplots(2, 3, figsize=(11.2, 3.3), layout='constrained')
     bars = []
     for row in axes:
         for ax in row:
-            image = ax.pcolormesh(np.arange(28).reshape(4, 7))
+            image = ax.pcolormesh(np.arange(66).reshape(3, 22))
             ax.set_aspect('equal')
         bars.append(fig.colorbar(image, ax=row))
 
@@ -158,16 +159,40 @@ def test_shared_row_colourbars_match_plotting_boxes_on_show_and_save(tmp_path):
 
     def inspect(event):
         for row, bar in zip(axes, bars):
+            width_pt = bar.ax.bbox.width / event.renderer.points_to_pixels(1)
+            assert width_pt == pytest.approx(5)
+            assert bar.outline.get_linewidth() == pytest.approx(1.4)
             for ax in row:
                 assert (bar.ax.bbox.y0, bar.ax.bbox.y1) == pytest.approx((ax.bbox.y0, ax.bbox.y1))
+                assert ax.spines['left'].get_linewidth() == pytest.approx(1.4)
         draws.append(event.canvas)
 
     fig.canvas.mpl_connect('draw_event', inspect)
     hdg.plots.show(block=False)
     assert draws
+    # Older Matplotlib calls the locator without a renderer during tight export
+    for bar in bars:
+        locator = bar.ax.get_axes_locator()
+        renderer = fig.canvas.get_renderer()
+        bar.ax.apply_aspect(locator(bar.ax, renderer))
+        expected = bar.ax.get_position().bounds
+        bar.ax.apply_aspect(locator(bar.ax, None))
+        assert bar.ax.get_position().bounds == pytest.approx(expected)
+    fig.set_size_inches(8.4, 2.475)
     draws.clear()
     hdg.plots.save(tmp_path / 'shared.pdf', fig=fig)
     assert draws
+
+
+def test_shared_colourbar_respects_explicit_aspect():
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3), layout='constrained')
+    for ax in axes:
+        image = ax.imshow(np.zeros((2, 8)))
+    bar = fig.colorbar(image, ax=axes, aspect=30)
+
+    fig.canvas.draw()
+    assert bar.ax.bbox.width == pytest.approx(bar.ax.bbox.height / 30)
+    assert bar.ax.bbox.height == pytest.approx(axes[0].bbox.height)
 
 
 @pytest.mark.parametrize('case', ['different heights', 'multiple rows', 'shrink'])
@@ -196,3 +221,135 @@ def test_colourbar_locator_stays_retired_after_reset_and_reenable():
     assert locator(bar.ax, renderer).bounds == pytest.approx(locator.original(bar.ax, renderer).bounds)
     hdg.set_style()
     assert locator(bar.ax, renderer).bounds == pytest.approx(locator.original(bar.ax, renderer).bounds)
+
+
+def test_top_colourbar_tracks_fixed_aspect_panel_on_export(tmp_path):
+    fig, ax = plt.subplots(figsize=(6, 4), layout='constrained')
+    image = ax.imshow(np.arange(24).reshape(8, 3))
+    bar = fig.colorbar(image, ax=ax, location='top')
+    widths = []
+
+    def inspect(event):
+        assert (bar.ax.bbox.x0, bar.ax.bbox.x1) == pytest.approx((ax.bbox.x0, ax.bbox.x1))
+        widths.append(bar.ax.bbox.height / event.renderer.points_to_pixels(1))
+
+    fig.canvas.mpl_connect('draw_event', inspect)
+    hdg.plots.save(tmp_path / 'top.pdf', fig=fig)
+    fig.set_size_inches(4, 3)
+    fig.canvas.draw()
+
+    assert widths
+    assert min(widths) >= 5 - 1e-6
+
+
+@pytest.mark.parametrize('layout', ['constrained', 'compressed', 'tight', 'none'])
+@pytest.mark.filterwarnings('error:This figure includes Axes that are not compatible')
+def test_finish_compacts_fixed_rows_with_shared_colourbars(layout, tmp_path):
+    from hedgehogs.plots.presentation import prepare
+
+    plt.rcParams['font.family'] = 'DejaVu Serif'
+    initial_size = (11.2, 6)
+    fig, axes = plt.subplots(2, 3, figsize=initial_size, layout=layout)
+    bars = []
+    for row, label in zip(axes, ['Temperature [K]', 'Long reaction rate label [1/s]'], strict=True):
+        for ax in row:
+            image = ax.pcolormesh(np.arange(66).reshape(3, 22), shading='auto')
+            ax.set_aspect('equal')
+            ax.set(xlabel='Streamwise distance [mm]', ylabel='Span [mm]')
+        bars.append(fig.colorbar(image, ax=row, label=label))
+    fig.suptitle('Fixed-aspect comparison')
+    limits = [(ax.get_xlim(), ax.get_ylim()) for ax in axes.flat]
+
+    prepare(fig)
+    size = tuple(fig.get_size_inches())
+    assert size[0] == pytest.approx(initial_size[0])
+    assert size[1] < initial_size[1]
+    assert [(ax.get_xlim(), ax.get_ylim()) for ax in axes.flat] == limits
+
+    renderer = fig.canvas.get_renderer()
+    bounds = []
+    for row, bar in zip(axes, bars, strict=True):
+        row_axes = [*row, bar.ax]
+        labels = [axis.label for ax in row_axes for axis in (ax.xaxis, ax.yaxis) if axis.label.get_text()]
+        bounds.append(matplotlib.transforms.Bbox.union([
+            artist.get_tightbbox(renderer) for artist in [*row_axes, *labels]
+        ]))
+    assert (bounds[0].y0 - bounds[1].y1) / renderer.points_to_pixels(1) == pytest.approx(6, abs=.2)
+    assert bounds[1].y0 / renderer.points_to_pixels(1) == pytest.approx(4, abs=.2)
+    assert all(0 <= box.x0 <= box.x1 <= fig.bbox.width for box in bounds)
+    for row, bar in zip(axes, bars, strict=True):
+        for ax in row:
+            assert bar.ax.bbox.intervaly == pytest.approx(ax.bbox.intervaly)
+            assert ax.bbox.width / ax.bbox.height == pytest.approx(22 / 3)
+
+    hdg.plots.save(tmp_path / 'compact.pdf', fig=fig, bbox_inches=None)
+    prepare(fig)
+    assert fig.get_size_inches() == pytest.approx(size)
+
+    if layout == 'constrained':
+        fig.suptitle('Fixed-aspect comparison\nLonger figure title')
+        prepare(fig)
+        edited = tuple(fig.get_size_inches())
+        assert size[1] < edited[1] <= initial_size[1]
+        prepare(fig)
+        assert fig.get_size_inches() == pytest.approx(edited)
+
+
+def test_shared_row_colourbar_uses_a_closer_gap_and_preserves_custom_spacing():
+    from hedgehogs.plots.presentation import prepare
+
+    def measure(explicit):
+        fig, axes = plt.subplots(1, 3, figsize=(11.2, 2.1), layout='constrained')
+        engine = fig.get_layout_engine()
+        for ax in axes:
+            image = ax.imshow(np.arange(66).reshape(3, 22))
+        if explicit:
+            engine.set(w_pad=3 / 72)
+        bar = fig.colorbar(image, ax=axes, **({'pad': .05} if explicit else {}))
+        prepare(fig)
+
+        renderer = fig.canvas.get_renderer()
+        points = renderer.points_to_pixels(1)
+        panel_gap = (axes[2].bbox.x0 - axes[1].bbox.x1) / points
+        bar_gap = (bar.ax.bbox.x0 - axes[-1].bbox.x1) / points
+        assert axes[-1].get_tightbbox(renderer).x1 < bar.ax.bbox.x0
+        assert engine.get()['w_pad'] == pytest.approx((3 if explicit else 5) / 72)
+
+        return panel_gap, bar_gap
+
+    default_panel, default_bar = measure(False)
+    custom_panel, custom_bar = measure(True)
+    assert default_bar < custom_bar
+    assert default_panel > custom_panel
+
+
+@pytest.mark.parametrize('dimension, size', [('width', (4.5, 2.4)), ('height', (9, 2.4))])
+def test_fixed_rows_report_labels_that_cannot_fit_without_enlarging(dimension, size, monkeypatch):
+    from hedgehogs.plots.presentation import prepare
+
+    if dimension == 'height':
+        get_tightbbox = matplotlib.axis.Axis.get_tightbbox
+
+        def layout_bbox(axis, renderer=None, **kwargs):
+            return get_tightbbox(axis, renderer, for_layout_only=True)
+
+        # Matplotlib 3.10 measures axes with layout-only label bounds
+        monkeypatch.setattr(matplotlib.axis.Axis, 'get_tightbbox', layout_bbox)
+
+    fig, axes = plt.subplots(2, 3, figsize=size, layout='compressed')
+    label = 'Long normalised field label [units]'
+    for row in axes:
+        for ax in row:
+            image = ax.imshow(np.zeros((2, 16)))
+            ax.set_xlabel('Streamwise coordinate [mm]')
+        bar = fig.colorbar(image, ax=row, label=label)
+        if dimension == 'height':
+            bar.set_label(f'{label} ({label})', fontfamily='DejaVu Serif', fontsize=16)
+
+    with pytest.warns(UserWarning, match=f'need more {dimension}'):
+        prepare(fig)
+
+    if dimension == 'height':
+        renderer = fig.canvas.get_renderer()
+        assert bar.ax.yaxis.label.get_window_extent(renderer).height > fig.bbox.height
+    assert fig.get_size_inches() == pytest.approx(size)

@@ -17,7 +17,7 @@ from matplotlib.container import Container
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
 from matplotlib.legend import Legend
-from matplotlib.layout_engine import TightLayoutEngine, PlaceHolderLayoutEngine
+from matplotlib.layout_engine import ConstrainedLayoutEngine, TightLayoutEngine, PlaceHolderLayoutEngine
 from matplotlib.lines import Line2D
 from matplotlib.markers import MarkerStyle
 from matplotlib.offsetbox import DrawingArea, PackerBase
@@ -27,35 +27,72 @@ from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
 
-class _ParentHeightColorbarLocator:
-    """Match a default vertical colour bar to aligned plotting boxes."""
+class _PanelColorbarLocator:
+    """Match a default colour bar to aligned plotting boxes."""
 
-    def __init__(self, parents: list[Axes], original: Any, generation: Any):
+    def __init__(self, parents: list[Axes], original: Any, generation: Any, *, vertical: bool, min_thickness: float):
         self.parents = parents
         self.original = original
         self.generation = generation
+        self.vertical = vertical
+        self.min_thickness = min_thickness
+        self.native_aspect: float | None = None
+        self.fitted_aspect: float | None = None
 
     def __call__(self, ax: Any, renderer: Any) -> Bbox:
         position = self.original(ax, renderer)
+        bounds = self._aligned_bounds(ax)
+        current_aspect = ax.get_box_aspect()
+        aspect = current_aspect
+        if self.fitted_aspect is not None and aspect == self.fitted_aspect:
+            aspect = self.native_aspect
+        self.native_aspect = aspect
+        self.fitted_aspect = None
+
+        if bounds is not None and self.min_thickness and aspect:
+            # Keep the outline from consuming the fill on shallow panels
+            figure = ax.get_figure(root=False)
+            pixels = Bbox.unit().transformed(figure.transSubfigure)
+            if self.vertical:
+                length = bounds.height * pixels.height
+                available = position.width * pixels.width
+                native_thickness = length / aspect
+            else:
+                length = bounds.width * pixels.width
+                available = position.height * pixels.height
+                native_thickness = length * aspect
+            minimum = max(self.min_thickness, 3 * ax.spines["outline"].get_linewidth())
+            # Older Matplotlib passes no renderer while applying a tight crop
+            minimum_pixels = minimum * figure.dpi / 72 if renderer is None else renderer.points_to_pixels(minimum)
+            thickness = min(available, minimum_pixels)
+            if length > 0 and thickness > native_thickness:
+                aspect = self.fitted_aspect = length / thickness if self.vertical else thickness / length
+        if aspect != current_aspect:
+            ax.set_box_aspect(aspect)
+
+        if bounds is None:
+            return position
+        if self.vertical:
+            return Bbox.from_extents(position.x0, bounds.y0, position.x1, bounds.y1)
+
+        return Bbox.from_extents(bounds.x0, position.y0, bounds.x1, position.y1)
+
+    def _aligned_bounds(self, ax: Any) -> Bbox | None:
         colourbar = getattr(ax, '_colorbar', None)
         if (self.generation is not _hook_generation or colourbar is None
                 or colourbar.extend != 'neither'):
-            return position
+            return None
 
         first, *others = self.parents
-        if not others:
-            panels = [panel for panel in first.figure.axes if not hasattr(panel, '_colorbar')]
-            if panels != [first]:
-                return position
-
         bounds = first.get_position()
+        edges = ('y0', 'y1') if self.vertical else ('x0', 'x1')
         for parent in others:
             panel = parent.get_position()
-            if not (isclose(panel.y0, bounds.y0, abs_tol=1e-6)
-                    and isclose(panel.y1, bounds.y1, abs_tol=1e-6)):
-                return position
+            if any(not isclose(getattr(panel, edge), getattr(bounds, edge), abs_tol=1e-6)
+                   for edge in edges):
+                return None
 
-        return Bbox.from_extents(position.x0, bounds.y0, position.x1, bounds.y1)
+        return bounds
 
     def get_subplotspec(self):
         return self.original.get_subplotspec()
@@ -576,21 +613,19 @@ class _FigureStyle:
                 if not outside:
                     fit = min(fit, (container.width * container.height * .2
                                     / (bounds.width * bounds.height)) ** .5)
-                base_size = FontProperties(size=plt.rcParams['legend.fontsize']).get_size_in_points()
+                base_size = FontProperties(size=plt.rcParams['axes.labelsize']).get_size_in_points()
                 floor = max(7., .75 * base_size)
             else:
                 floor = 6. * factor
             current_font = (min((text.get_fontsize() for text in legend.get_texts()),
-                                default=legend._fontsize) if outside else legend._fontsize)
+                                default=legend._fontsize) if finished else legend._fontsize)
             fit = min(1.0, max(fit, floor / current_font))
             if fit < 1.0:
-                scale = (self.values.get(legend, {}).get('legend_fontsize', (None, None, factor))[2]
-                         if finished else factor)
                 for artist in legend.findobj():
                     if finished and not isinstance(artist, (Text, Legend, DrawingArea, PackerBase)):
                         continue
-                    artist_scale = scale
-                    if outside:
+                    artist_scale = factor
+                    if finished:
                         # Text roles and packing boxes can have different
                         # cached scales after finishing; shrink each from its
                         # current physical size instead of the legend's scale.
@@ -876,8 +911,12 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
             return original_colorbar(figure, *args, **kwargs)
         style = getattr(figure, "_hedgehogs_style", None)
         cax = kwargs.get("cax", args[1] if len(args) > 1 else None)
+        parents = kwargs.get("ax", args[2] if len(args) > 2 else None)
+        engine = figure.get_layout_engine()
+        shared = hasattr(parents, "__iter__")
         if (style is not None and style.manage_margins and _reference_size is not None
-                and figure.get_layout_engine() is None and cax is None
+                and (engine is None or (shared and isinstance(engine, TightLayoutEngine)))
+                and cax is None
                 and len(figure.axes) > 1
                 and all(getattr(axis, "get_subplotspec", lambda: None)() is not None
                         for axis in figure.axes)
@@ -889,13 +928,29 @@ def enable(reference_size: tuple[float, float], *, manage_margins: bool = True) 
         result = original_colorbar(figure, *args, **kwargs)
         info = getattr(result.ax, '_colorbar_info', {})
         parents = info.get('parents', [])
-        panels = [axis for axis in figure.axes if not hasattr(axis, '_colorbar')]
-        if (style is not None and cax is None and parents and result.orientation == 'vertical'
+        engine = figure.get_layout_engine()
+        if (style is not None and style.manage_margins and cax is None and len(parents) > 1
+                and result.orientation == 'vertical' and isinstance(engine, ConstrainedLayoutEngine)):
+            specs = [ax.get_subplotspec() for ax in parents]
+            if all(spec is not None and spec.get_gridspec() is specs[0].get_gridspec()
+                   and spec.rowspan == specs[0].rowspan and len(spec.rowspan) == 1 for spec in specs):
+                if 'pad' not in kwargs:
+                    info['pad'] = .02
+                spacing = engine.get()
+                if (spacing['w_pad'] == plt.rcParamsDefault['figure.constrained_layout.w_pad']
+                        and spacing['wspace'] == plt.rcParamsDefault['figure.constrained_layout.wspace']
+                        and specs[0].get_gridspec().wspace is None):
+                    engine.set(w_pad=5 / 72)
+        if (style is not None and cax is None and parents
                 and result.extend == 'neither' and info.get('shrink', 1) == 1
-                and not any(key in kwargs for key in ('shrink', 'anchor', 'panchor'))
-                and (len(parents) > 1 or panels == parents)):
+                and not any(key in kwargs for key in ('shrink', 'anchor', 'panchor'))):
             locator = result.ax.get_axes_locator()
-            result.ax.set_axes_locator(_ParentHeightColorbarLocator(parents, locator, generation))
+            min_thickness = 0. if 'aspect' in kwargs else 5.
+            result.ax.set_axes_locator(_PanelColorbarLocator(
+                parents, locator, generation,
+                vertical=result.orientation == 'vertical',
+                min_thickness=min_thickness,
+            ))
         return result
 
     _installed_colorbar = colorbar

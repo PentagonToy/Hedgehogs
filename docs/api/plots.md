@@ -13,8 +13,6 @@ SHAP-value drawings and SHAP integration have a separate [SHAP reference](shap.m
 | `hdg.plots.decision_regions(...)` | Draw two-feature classification regions and samples | `Axes` |
 | `hdg.plots.label(...)` | Add or update panel labels with optional halos and boxes | `list[Text]` |
 | `hdg.plots.square(...)` | Set or release square plotting boxes | `None` |
-| `hdg.plots.annotate_panels(...)` | Place explicit panel annotations | `None` |
-| `hdg.plots.style_colorbar(...)` | Style a colour bar | `None` |
 | `hdg.plots.apply_grid(...)` | Add a major grid | `None` |
 | `hdg.plots.enable_minor_ticks(...)` | Add minor tick locators | `None` |
 | `hdg.plots.legend(...)` | Place a panel or shared legend inside or outside | `Legend` |
@@ -181,38 +179,15 @@ hdg.plots.square(ax=axes[0, 0])     # One panel
 hdg.plots.square(False)            # Release all panels
 ```
 
-Default vertical colour bars follow the plotting-box height for single-panel figures and for shared bars whose panels have matching top and bottom edges. Explicit shrink or anchor settings, custom colour-bar axes, horizontal bars and extension markers retain Matplotlib placement.
+Use `fig.colorbar(image, ax=axes[row], label=label)` for a shared colour bar. Default vertical bars match the plotting-box height, and horizontal bars match its width. Shared bars align when their parent panels share those edges. A minimum thickness keeps the colour scale visible when space permits. Use Matplotlib to set the location, label or an explicit aspect.
 
-## Other adjustments
+In constrained or compressed layouts, Hedgehogs places a shared vertical colour bar closer to its row and gives neighbouring panels more horizontal padding. Set `pad` on the colour bar or horizontal spacing on the layout engine to override those defaults.
 
-Adjust existing axes and colour bars without changing the plotted data.
+## Grid and minor ticks
 
-```python
-hdg.plots.annotate_panels(
-    axes, labels=None, loc="upper left", offset=None,
-    fontsize=None, fontweight="bold",
-)
-hdg.plots.style_colorbar(cb, label=None)
-hdg.plots.apply_grid(ax=None, axis="both")
-hdg.plots.enable_minor_ticks(ax=None, x=True, y=True)
-```
+`plots.apply_grid(ax=None, axis="both")` adds a dotted major grid. `plots.enable_minor_ticks(ax=None, x=True, y=True)` adds minor locators to selected linear axes. Both edit the supplied axes or the current axes and return `None`. Matplotlib controls custom tick formats.
 
-| Helper | Parameters and defaults | Behaviour |
-| --- | --- | --- |
-| `annotate_panels()` | Required `axes`; `labels=None` generates `(a)`, `(b)`, …; `loc="upper left"`; `offset=None`; `fontsize=None` uses the current font size; `fontweight="bold"` | Place labels in axes coordinates; `offset=(x, y)` overrides placement, and `loc` selects left or right alignment |
-| `style_colorbar()` | Required `cb`; `label=None` preserves the existing label | Apply configured outline and tick styling |
-| `apply_grid()` | `ax=None` selects current axes; `axis="both"` accepts `x`, `y`, or `both` | Add a dotted major grid beneath the plotted data |
-| `enable_minor_ticks()` | `ax=None` selects current axes; `x=True`, `y=True` | Install automatic minor locators for linear axes |
-
-All four helpers return `None` and edit existing artists. Supply one label per panel.
-
-```python
-hdg.plots.annotate_panels(axes)
-hdg.plots.apply_grid(axes[0, 0], axis="y")
-hdg.plots.show(fig)
-```
-
-Use `plots.show()` or `plots.save()` for automatic finishing. Custom tick formatting remains a Matplotlib choice.
+Existing notebooks can still use `annotate_panels()` and `style_colorbar()`. For new figures, use [`plots.label()`](#plotslabel) for panel labels and pass `label` directly to `fig.colorbar()`.
 
 ## `plots.legend`
 

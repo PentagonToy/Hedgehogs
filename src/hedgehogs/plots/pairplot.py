@@ -223,6 +223,12 @@ def pairplot(
              ((bottom + top) / 2 - position.y0) / position.height),
             transform=panel.transAxes,
         )
+    marker_edge = float(plt.rcParams['lines.markeredgewidth'])
+    frame_width = float(plt.rcParams['axes.linewidth'])
+    data_width = max(float(plt.rcParams['lines.linewidth']), frame_width)
+    if hue is not None:
+        legend.get_frame().set_linewidth(frame_width)
+
     # Layout and typography interact: measure the panel after solving layout,
     # then settle its proportional text sizes without accumulating scaling.
     for _ in range(4):
@@ -237,12 +243,12 @@ def pairplot(
             ax.tick_params(axis='y', labelsize=y_tick_font * factor)
             for collection in ax.collections:
                 collection.set_sizes([plt.rcParams['lines.markersize'] ** 2 * factor ** 2])
-                collection.set_linewidths([plt.rcParams['lines.markeredgewidth'] * factor])
+                collection.set_linewidths([marker_edge])
             for child in ax.child_axes:
                 for line in child.lines:
-                    line.set_linewidth(plt.rcParams['lines.linewidth'] * factor)
+                    line.set_linewidth(data_width)
                 for patch in child.patches:
-                    patch.set_linewidth(plt.rcParams['lines.linewidth'] * factor)
+                    patch.set_linewidth(data_width)
         if hue is not None:
             for text in legend.get_texts():
                 text.set_fontsize(legend_font * factor)
@@ -253,7 +259,7 @@ def pairplot(
                 legend_handles = legend.legendHandles
             for handle in legend_handles:
                 handle.set_markersize(plt.rcParams['lines.markersize'] * plt.rcParams['legend.markerscale'] * factor)
-                handle.set_markeredgewidth(plt.rcParams['lines.markeredgewidth'] * factor)
+                handle.set_markeredgewidth(marker_edge)
             legend_width = legend.get_window_extent(fig._get_renderer()).width / fig.dpi
             if figsize is None:
                 fig.set_size_inches(2.24 * n + legend_width + gap_inches + outer_inches,

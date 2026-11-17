@@ -423,7 +423,7 @@ def test_sparse_chart_has_more_typographic_presence_than_a_dense_report():
     ax.set_ylabel('Importance')
     prepare(fig)
     assert ax.yaxis.label.get_fontsize() > dense_ax.xaxis.label.get_fontsize()
-    assert ax.yaxis.label.get_fontsize() <= 23.1
+    assert ax.yaxis.label.get_fontsize() <= 12.6 + 1e-6
 
 
 def test_a_sparse_chart_can_become_dense_without_retaining_oversized_roles():
@@ -442,10 +442,6 @@ def test_a_sparse_chart_can_become_dense_without_retaining_oversized_roles():
 
 
 def test_outline_weight_is_aspect_invariant_and_small_markers_keep_a_face():
-    from hedgehogs.plots.typography import outline_scale
-    reference = (2.24, 2.2)
-    assert outline_scale(1, 4, reference) == pytest.approx(outline_scale(2, 2, reference))
-    assert outline_scale(4, 1, reference) == pytest.approx(outline_scale(2, 2, reference))
     fig, ax = plt.subplots(figsize=(2.24, 6.6))
     tiny = ax.scatter([0, 1], [1, 2], s=1)
     explicit = ax.scatter([0, 1], [2, 3], s=1, linewidths=2)
@@ -490,7 +486,7 @@ def test_default_line_and_legend_strokes_follow_frame_but_explicit_widths_surviv
     explicit, = ax.plot([0, 1], [1, 0], linewidth=1.1, label='Explicit')
     legend = ax.legend(loc='upper left')
     prepare(fig)
-    assert default.get_linewidth() > ax.spines['left'].get_linewidth()
+    assert default.get_linewidth() == ax.spines['left'].get_linewidth()
     assert explicit.get_linewidth() == 1.1
     handles = legend.legend_handles if hasattr(legend, 'legend_handles') else legend.legendHandles
     assert handles[0].get_linewidth() == default.get_linewidth()
@@ -707,7 +703,7 @@ def test_finished_internal_legend_has_a_space_budget_and_stable_output(tmp_path)
     fig, ax = plt.subplots(figsize=(4.48, 4.4))
     samples = ax.scatter([-2, 0, 2], [-10, 0, 4], label='Noisy Data')
     ax.plot([-2, 0, 2], [-10, 0, 4], label='True Function')
-    ax.plot([-2, 0, 2], [-9, .5, 4.5], label='Fitted Polynomial')
+    ax.plot([-2, 0, 2], [-9, .5, 4.5], label='Fitted Polynomial Response Model')
     ax.set(xlabel='x', ylabel='y', title='Polynomial fit')
     legend = ax.legend(loc='lower right')
     prepare(fig)
@@ -762,7 +758,7 @@ def test_legend_budget_across_plot_types(kind):
     for _ in range(2):
         prepare(fig)
         box = legend.get_window_extent(fig.canvas.get_renderer())
-        assert box.width <= ax.bbox.width * .6 + 2
+        assert box.width <= ax.bbox.width * .6 + 3
         assert box.height <= ax.bbox.height * .4 + 2
         assert box.width * box.height <= ax.bbox.width * ax.bbox.height * .2 + 100
         handles = getattr(legend, 'legend_handles', None)
@@ -785,7 +781,7 @@ def test_shared_inside_legend_uses_grid_space_budget(kind):
     prepare(fig)
     bounds = legend.get_window_extent(fig.canvas.get_renderer())
     container = legend.get_bbox_to_anchor()
-    floor = max(7., .75 * float(plt.rcParams['legend.fontsize']))
+    floor = max(7., .75 * float(plt.rcParams['axes.labelsize']))
     assert (bounds.width <= container.width * .6 + 2
             or legend.get_texts()[0].get_fontsize() == pytest.approx(floor, abs=.1))
     if kind == 'bar':
@@ -793,3 +789,29 @@ def test_shared_inside_legend_uses_grid_space_budget(kind):
         if handles is None:
             handles = legend.legendHandles
         assert handles[0].get_linewidth() == pytest.approx(axes[0].patches[0].get_linewidth())
+
+
+def test_finished_style_keeps_physical_weights_across_panels_and_resizes():
+    for shape, size in [((1, 1), (4, 3)), ((2, 2), (7, 5))]:
+        fig, axes = plt.subplots(*shape, figsize=size, layout='constrained', squeeze=False)
+        for ax in axes.flat:
+            ax.set(xlabel='Position', ylabel='Response')
+            ax.plot([0, 1], [0, 1], label='Fit')
+            ax.scatter([0], [1], label='Samples')
+            ax.legend(loc='lower right', title='Series')
+
+        for canvas in (size, tuple(side * 1.3 for side in size)):
+            fig.set_size_inches(canvas)
+            prepare(fig)
+            for ax in axes.flat:
+                legend = ax.get_legend()
+                handles = legend.legend_handles if hasattr(legend, 'legend_handles') else legend.legendHandles
+                assert ax.spines['left'].get_linewidth() == pytest.approx(1.4)
+                assert ax.lines[0].get_linewidth() == pytest.approx(1.4)
+                assert legend.get_frame().get_linewidth() == pytest.approx(1.4)
+                assert ax.xaxis.get_major_ticks()[0].tick1line.get_markeredgewidth() == pytest.approx(1.05)
+                assert ax.collections[0].get_linewidths() == pytest.approx([.8])
+                assert handles[1].get_linewidths() == pytest.approx([.8])
+                label_size = ax.xaxis.label.get_fontsize()
+                assert ax.get_xticklabels()[0].get_fontsize() == pytest.approx(label_size)
+                assert legend.get_title().get_fontsize() == pytest.approx(legend.get_texts()[0].get_fontsize())

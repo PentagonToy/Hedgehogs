@@ -1,7 +1,7 @@
 """Finish complete figures before display or export.
 
 Use Matplotlib's renderer for measurement and a bounded candidate search for
-legend placement. Keep author sizes and scientific coordinates unchanged.
+legend placement. Keep scientific coordinates unchanged.
 """
 
 from itertools import combinations
@@ -369,6 +369,107 @@ def _compact_bar_values(fig: Any) -> None:
                         text.set_text(format(value, '.4g'))
 
 
+def _compact_fixed_rows(fig: Any, renderer: Any) -> None:
+    """Pack a rectangular fixed-aspect grid without resizing its panels."""
+    axes = [ax for ax in fig.axes if ax.get_visible()]
+    panels = [ax for ax in axes if not hasattr(ax, '_colorbar')]
+    if not panels or fig.legends or any(not ax.get_in_layout() for ax in axes):
+        return
+    if any(not (ax.get_box_aspect() is not None
+                or (ax.get_aspect() != 'auto' and ax.get_adjustable() == 'box'))
+           or ax.child_axes for ax in panels):
+        return
+    title = fig._suptitle
+    if any(text is not title and text.get_visible() for text in fig.texts):
+        return
+
+    specs = [ax.get_subplotspec() for ax in panels]
+    if any(spec is None for spec in specs):
+        return
+    grid = specs[0].get_gridspec()
+    rows, columns = grid.get_geometry()
+    if (rows < 2 or len(specs) != rows * columns or len(set(specs)) != len(specs)
+            or any(spec.get_gridspec() is not grid or spec.num1 != spec.num2 for spec in specs)):
+        return
+
+    row_index = {ax: spec.rowspan.start for ax, spec in zip(panels, specs, strict=True)}
+    for ax in axes:
+        if ax in row_index:
+            continue
+        parents = getattr(ax, '_colorbar_info', {}).get('parents', ())
+        parent_rows = {row_index.get(parent) for parent in parents}
+        if len(parent_rows) != 1 or None in parent_rows:
+            return
+        row_index[ax] = parent_rows.pop()
+
+    groups: list[list[Any]] = [[] for _ in range(rows)]
+    for ax in axes:
+        groups[row_index[ax]].append(ax)
+
+    decorations: dict[Any, Bbox] = {}
+    for ax in axes:
+        box = ax.get_tightbbox(renderer)
+        if box is None:
+            return
+        # Matplotlib 3.10 collapses the long dimension of axis labels
+        label_boxes = [axis.label.get_window_extent(renderer) for axis in (ax.xaxis, ax.yaxis)
+                       if ax.axison and axis.get_visible() and axis.label.get_visible()
+                       and axis.label.get_text()]
+        box = Bbox.union([box, *label_boxes])
+        if not np.isfinite(box.extents).all():
+            return
+        decorations[ax] = box
+    bounds = [Bbox.union([decorations[ax] for ax in group]) for group in groups]
+    labels = [[ax.xaxis.label.get_window_extent(renderer) for ax in group
+               if not hasattr(ax, '_colorbar') and ax.xaxis.label.get_visible()
+               and ax.get_xlabel()] for group in groups]
+    if (any(box.x0 < fig.bbox.x0 or box.x1 > fig.bbox.x1 for box in bounds)
+            or any(_overlap(left, right) > 0 for row in labels for left, right in combinations(row, 2))):
+        warnings.warn('Fixed-aspect rows need more width for their labels; widen the figure or shorten the labels.',
+                      UserWarning, stacklevel=3)
+        return
+
+    title_box = title.get_window_extent(renderer) if title is not None and title.get_visible() else None
+    margin = renderer.points_to_pixels(4)
+    content_height = 2 * margin + sum(box.height for box in bounds)
+    gaps = rows - 1
+    if title_box is not None:
+        content_height += title_box.height
+        gaps += 1
+
+    crowded = (any(upper.y0 < lower.y1 for upper, lower in zip(bounds, bounds[1:]))
+               or any(box.y0 < fig.bbox.y0 or box.y1 > fig.bbox.y1 for box in bounds)
+               or (title_box is not None and title_box.y0 < bounds[0].y1))
+    gap = min(renderer.points_to_pixels(6), (fig.bbox.height - content_height) / gaps)
+    if gap < renderer.points_to_pixels(2):
+        if crowded:
+            warnings.warn('Fixed-aspect rows need more height for their labels; increase figure height or shorten the labels.',
+                          UserWarning, stacklevel=3)
+        return
+    height = content_height + gaps * gap
+    if not crowded and fig.bbox.height - height < renderer.points_to_pixels(.5):
+        return
+
+    width = fig.bbox.width
+    panel_boxes = {ax: ax.bbox.frozen() for ax in axes}
+    old_size = tuple(fig.get_size_inches())
+    title_y = title.get_position()[1] * fig.bbox.height if title_box is not None else None
+    fig.set_size_inches(old_size[0], height / fig.dpi)
+
+    bottom = margin
+    for group, box in zip(reversed(groups), reversed(bounds), strict=True):
+        shift = bottom - box.y0
+        for ax in group:
+            panel = panel_boxes[ax]
+            ax._set_position([panel.x0 / width, (panel.y0 + shift) / height,
+                              panel.width / width, panel.height / height])
+        bottom += box.height + gap
+    if title_box is not None and title_y is not None:
+        title.set_y((title_y + bottom - title_box.y0) / height)
+
+    fig._hedgehogs_compact_sizes = old_size, tuple(fig.get_size_inches())
+
+
 def prepare(fig: Figure) -> None:
     """Finish a figure in place; repeated calls do not rescale its artists."""
     if not isinstance(fig, Figure):
@@ -390,6 +491,12 @@ def prepare(fig: Figure) -> None:
                 target._hedgehogs_finish_signature = _signature(target)
             return
     _restore_auto_legends(target)
+    compact_sizes = getattr(target, '_hedgehogs_compact_sizes', None)
+    if compact_sizes is not None:
+        original, compact = compact_sizes
+        if tuple(target.get_size_inches()) == compact:
+            target.set_size_inches(original)
+        del target._hedgehogs_compact_sizes
     _fit_default_category_canvas(target)
     _compact_bar_values(target)
     from matplotlib.layout_engine import PlaceHolderLayoutEngine
@@ -512,6 +619,8 @@ def prepare(fig: Figure) -> None:
         target.set_layout_engine('none')
     target._hedgehogs_finish_frozen_engine = target.get_layout_engine()
     target._hedgehogs_finish_layout_locked = True
+    if state is not None and state.manage_margins:
+        _compact_fixed_rows(target, renderer)
     target.canvas.draw()
     if _bar_collisions(target, target._get_renderer()):
         warnings.warn('Bar value labels still overlap; increase the canvas or adjust their positions.',

@@ -29,40 +29,32 @@ The Science canvas measures 2.24 × 2.20 inches. Default subplot fractions give 
 | --- | --- |
 | Ordinary single panel | Scale point sizes by the smaller canvas width/height ratio to its stored reference |
 | Ordinary subplot grid | Retain configured point sizes as panel count grows |
-| Finished single panel | Apply bounded default text and outline scales |
-| Pairplot | Scale from the smallest solved panel short side; retain configured size floors |
+| Finished single panel | Apply bounded text sizing and fixed physical strokes |
+| Pairplot | Scale text and marker sizes from the smallest solved panel; retain stroke widths |
 | Decision tree | Fit text, boxes and branches to the measured node layout |
 
-Reference-size panels retain configured text sizes. For a larger panel, let $L$ be its short side. Dense panels include 3D axes, images, meshes, at least six bar-value labels or more than four category ticks. Legend count does not change panel typography; placement and outside spacing are handled separately.
+Reference-size panels and grids retain configured text sizes. For a larger single panel, let $L$ be its short side. Dense panels include 3D axes, images, meshes, at least six bar-value labels or more than four category ticks. Legend count does not change panel typography; placement and outside spacing are handled separately.
 
 | Text role | Multiplier |
 | --- | --- |
-| Dense panel defaults | $s=\min(1.35,\max(1,\sqrt{L/L_{ref}}))$ |
-| Other panel defaults | $s=\min(2.2,\max(1,L/L_{ref}))$ |
+| Dense panel defaults | $s=\min(1.15,\max(1,\sqrt{L/L_{ref}}))$ |
+| Other panel defaults | $s=\min(1.2,\max(1,L/L_{ref}))$ |
 | Dense bar-value labels | $\min(s,1.1)$ |
 | Sparse bar-value labels | $\max(1,0.9s)$ |
 
-Apply panel scaling to default labels, ticks and titles. Legends start at the same scale, then fit the space budget below. Bar-value labels start from the configured tick size; marker areas retain their configured sizes. 3D axes use bounded dense typography and default label spacing based on tick size. Automatic linear tick budgets use projected axis lengths and omit endpoints to avoid shared-corner collisions. Finishing fits projected labels inside the canvas without changing the view, limits or box aspect. Explicit fonts, label padding and tick locators remain unchanged.
+Default tick labels, legend text and legend titles start at the axis label size. Panel titles remain slightly larger. Legends fit the space budget below. Bar-value labels start from the configured tick size; marker areas retain their configured sizes. 3D axes use bounded dense typography and default label spacing based on tick size. Automatic linear tick budgets use projected axis lengths and omit endpoints to avoid shared-corner collisions. Finishing fits projected labels inside the canvas without changing the view, limits or box aspect. Explicit fonts, label padding and tick locators remain unchanged.
 
 Axis frames retain their configured width in points across ordinary draws, finished figures and pairplots. Per-spine widths remain in effect after resizing and export. At the same output DPI the physical stroke width maps to the same pixel width. If you resize the exported image in a document, its stroke scales with the image.
 
-Other default strokes scale independently of text density:
-
-$$
-R=\sqrt{WH/A_{ref}},\qquad o=\min(2.2,\max(1.6,1.6+0.4\log_2 R)).
-$$
-
-Here $W,H$ are panel dimensions and $A_{ref}$ is the reference canvas area times the default subplot fractions. Equal-area panels retain equal stroke weight. Default marker edges are capped at one quarter of their diameter; explicit strokes retain their values.
-
-Relative to data-line width, axes use $1.4/1.1$ and marker edges $0.5/1.1$. Marker diameter scales with `base_fontsize` relative to 10.5 pt, with a 2.5 pt floor.
+Finishing uses the configured frame width for legend boxes and as the minimum for default data lines and patches. Tick strokes default to 1.05 pt; major and minor marks are 4 and 2 pt long. Default marker edges use 0.8 pt, capped at one quarter of the diameter. These weights do not depend on panel area or aspect. Explicit strokes retain their values.
 
 Default 2D linear ticks use three to six intervals. 3D budgets use projected lengths, then reduce automatic ticks when measured labels overlap. Custom, fixed, logarithmic and date locators stay unchanged. Colour-bar text follows its parent axes.
 
-Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend space. Text, marker diameters and data strokes scale by $s$ and marker areas by $s^2$. Pairplots and trees own their sizing and bypass ordinary scaling. Pairplot fitting runs during construction; later canvas resizing does not repeat it.
+Pairplots use $s=\max(1,L_{min}/L_{ref})$ after reserving labels and legend space. Text and marker diameters scale by $s$ and marker areas by $s^2$. Pairplots and trees own their sizing and bypass ordinary scaling. Pairplot fitting runs during construction; later canvas resizing does not repeat it.
 
 ## Legend fitting and limits
 
-Default inside legends in `show()` and `save()` target at most 60% of panel width, 40% of height and 20% of area. Shared inside legends use the combined panel bounds. Text and spacing scale together; marker sizes and stroke weight follow the plotted sources, including bar and histogram patches. The font floor is `max(7 pt, 0.75 × configured legend size)`; readability takes priority over these soft targets. Explicit fonts and external anchors retain user control. Native figure legends and the specialised pairplot and tree layouts retain their own sizing. Default inside legend fitting preserves panel geometry and axis typography.
+Default inside legends in `show()` and `save()` target at most 60% of panel width, 40% of height and 20% of area. Shared inside legends use the combined panel bounds. Text and spacing scale together; marker sizes and stroke weight follow the plotted sources, including bar and histogram patches. The font floor is `max(7 pt, 0.75 × configured axis label size)`; readability takes priority over these soft targets. Explicit fonts and external anchors retain user control. Native figure legends and the specialised pairplot and tree layouts retain their own sizing. Default inside legend fitting preserves panel geometry and axis typography.
 
 Automatic outside legends use 90% of canvas width and 40% of height above or below panels, or 40% of width and 90% of height beside panels, with the same font floor. Location and column count remain fixed. With automatic outside placement, long default 2D axis labels limit panel typography enlargement to the measured label space; configured sizes remain the minimum. Actual anchors and a 3 pt canvas border further bound the available span. Shared outside legends reserve measured overflow together with their panel decorations before layout is frozen. Explicit anchors bypass this fitting.
 
@@ -112,4 +104,12 @@ These panels use bounded dense typography, so enlargement does not recreate text
 
 Figure legends clearly placed along the left or right edge reserve a side strip during managed grid layout, matching the existing top/bottom reservation. This prevents native external grid legends from covering the last panel; legend locations remain unchanged.
 
-Default vertical colour bars follow the resolved plotting-box height in single-panel figures. Shared bars follow the same rule when all parent panels have matching top and bottom edges. The locator measures panel bounds after aspect adjustment. Explicit shrink or anchor settings, custom colour-bar axes and extension markers retain Matplotlib placement.
+Default colour bars follow the resolved plotting-box height or width, including bars attached to individual panels in a grid. Shared bars align when their parents share the relevant two edges. The minimum thickness is 5 pt or three times the outline width, subject to the space Matplotlib reserves. Explicit aspect controls thickness. Explicit shrink or anchors, custom colour-bar axes and extension markers retain Matplotlib placement.
+
+In constrained or compressed layouts, a vertical colour bar shared by one row uses a default pad of 2% of the parent span. Horizontal panel padding defaults to 5 pt for these figures. Matplotlib still reserves space for text. Explicit colour-bar padding and non-default horizontal spacing take precedence.
+
+## Fixed-aspect panel grids
+
+Finishing measures each row from the union of its panel and colour-bar bounds, including labels, ticks and panel titles. It packs those rows with 4 pt top and bottom margins and targets 6 pt gaps, including below a figure title. Gaps can decrease to 2 pt to fit the supplied canvas. The canvas shrinks only in height; the panel dimensions, axis limits and colour scales stay fixed.
+
+This pass follows the initial Matplotlib layout and can replace its vertical spacing even when `figsize` or a layout engine was specified. It applies to complete rectangular grids with at least two rows, fixed-aspect panels and colour bars that belong to a single row. Spanning panels, insets, figure legends and figures with additional figure text retain their initial layout. If labels cannot fit, finishing retains the original canvas and reports the limiting dimension.

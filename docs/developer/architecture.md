@@ -47,7 +47,7 @@ Keep the dependency direction explicit: presentation modules may import `core`; 
 
 During ordinary styled draws, a local cache reuses native automatic legend searches with matching dimensions, renderer, axes bounds, limits and transform matrix. Remove temporary wrappers and cached results after each draw, including setup and rendering failures. A temporary wrapper retained by another library delegates to native search after its draw ends. Explicit anchors and instance search overrides bypass the cache.
 
-Default single-panel vertical colour bars use a locator that follows the parentâ€™s active box height. The adapter delegates native metadata and retires with its rendering-hook generation; explicit colour-bar geometry and shared/extended bars bypass it.
+The colour-bar locator follows the resolved panel edges and delegates native metadata. See [colour bars and fixed-aspect grids](presentation.md#fixed-aspect-panel-grids) for placement rules.
 
 ## Figure finishing
 
@@ -56,7 +56,7 @@ Default single-panel vertical colour bars use a locator that follows the parentâ
 1. Retain author edits and restore point-sized bases.
 2. Measure geometry and refine default typography with `draw_without_rendering()`, falling back to a canvas draw when unavailable.
 3. Select automatic legend positions and separate supported bar-value labels.
-4. Freeze layout and render the complete figure.
+4. Pack eligible fixed-aspect rows, freeze layout and render the complete figure.
 
 Automatic outside legends share one ownership check: managed placement can fit, while an explicit anchor remains author-owned. Fit text and reserve measured physical space in bounded passes before freezing layout; panel geometry is revisited only when managed decorations still clip.
 

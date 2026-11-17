@@ -2,9 +2,13 @@
 
 ## Unreleased
 
-- Align default shared vertical colour bars with their panels when the plotting boxes have matching top and bottom edges.
+- Compact fixed-aspect panel grids during display and export. Keep the figure width and panel dimensions while reserving space for row and colour-bar labels.
 
-- Keep plot frames at a consistent thickness across figure sizes, including pairplots and exports. The default is 1.4 pt, and explicit axis spine widths are preserved.
+- Place row-shared vertical colour bars closer to their panels and increase default spacing between neighbouring panels.
+
+- Match default plot, legend and colour-bar frames across panel counts and output sizes. Finish tick and legend text from the axis label size and retain colour fill in shallow bars.
+
+- Align default horizontal and vertical colour bars with their panel edges, including individual and shared bars in a grid.
 
 - Reuse resolved font sizes during figure finishing to reduce repeated work on multi-panel figures.
 

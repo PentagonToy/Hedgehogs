@@ -100,7 +100,7 @@ def set_style(
     elw   = lw * REFERENCE_MARKER_EDGE_WIDTH / REFERENCE_LINE_WIDTH
     ms    = max(_MIN_MARKERSIZE, _MARKER_TO_FONT_RATIO * fs)
     major = 4.0 * s
-    minor = 3.0 * s
+    minor = 2.0 * s
 
     plt.rcParams.update({
         # ── Font ──
@@ -149,6 +149,8 @@ def set_style(
         "ytick.minor.size":      minor,
         "xtick.major.width":     tick_lw,
         "ytick.major.width":     tick_lw,
+        "xtick.minor.width":     tick_lw,
+        "ytick.minor.width":     tick_lw,
         "xtick.minor.visible":   False,
         "ytick.minor.visible":   False,
         "xtick.major.pad":       4.0 * s,

@@ -35,7 +35,7 @@ python -m mypy
 
 Run full validation once after functional changes have settled, or before release. Repeat it only after a relevant code change, failure or newly identified risk. Source unchanged since a passing run does not need another full run because documentation, a commit message or a Git hash changed.
 
-CI checks supported Python versions in parallel. Push settled changes once; allow CI to finish in the background during ordinary development. Confirm its outcome before tagging or publishing. Markdown-only pushes skip runtime CI; release checks still validate the built description and source archive.
+Routine CI runs the full suite on Python 3.12 and focused compatibility checks on Python 3.10 and 3.13. A release tag or manual run exercises the full matrix and checks the distributions. Markdown-only changes skip routine CI.
 
 ## Optional visual references
 
@@ -78,7 +78,7 @@ Store JSON reports outside the source tree with source changes and hardware deta
 
 ## Regression criteria
 
-Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Cover inside legends for lines, scatter, bars, histograms, boxes, 3D axes and shared panels, including source outline widths. Run font-sensitive cases with the configured serif family and DejaVu Serif. Finished inside legends target 60% width, 40% height and 20% area, subject to the `max(7 pt, 0.75 × configured legend size)` floor. Ordinary drawing uses a scaled 6 pt floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
+Test observable behaviour: preserved data, explicit author settings, readable sizing, representative containment and stable repeated output. Cover inside legends for lines, scatter, bars, histograms, boxes, 3D axes and shared panels, including source outline widths. Run font-sensitive cases with the configured serif family and DejaVu Serif. Finished inside legends target 60% width, 40% height and 20% area, subject to the `max(7 pt, 0.75 × configured axis label size)` floor. Ordinary drawing uses a scaled 6 pt floor; see [Legend fitting and limits](../docs/developer/presentation.md#legend-fitting-and-limits).
 
 Cross-dataset checks hold canvas size, limits, ticks, labels, fonts and layout configuration fixed while changing line/scatter data. Compare axes bounds after finishing, data edits and export; automatic legend positions may differ. Hook checks cover repeated style cycles, third-party replacements and failure cleanup.
 

@@ -1,50 +1,25 @@
-# Gallery
+# Plot gallery
 
-These examples use the same synthetic data, Science single-column dimensions and Times New Roman typography. Only the categorical palette changes. The SVGs preserve vector paths and use a white figure background in both website themes.
+These figures come from the [plotting tutorial](../tutorials/plots.ipynb). The examples draw with Matplotlib and finish with Hedgehogs.
 
-## Okabe–Ito
+## Lines and prediction errors
 
-The default eight-colour palette.
+![Sine and cosine with an inside legend](assets/gallery/plots-1.png)
 
-![Synthetic data and model with Okabe–Ito](assets/gallery/okabe-ito.svg)
+![Predicted and measured sound levels with an outside legend](assets/gallery/plots-2.png)
 
-## Paul Tol bright
+![Mean absolute errors for two models](assets/gallery/plots-3.png)
 
-A seven-colour palette for categorical series.
+## Fields and surfaces
 
-![Synthetic data and model with Paul Tol bright](assets/gallery/paul-tol-bright.svg)
+![Loss field with an aligned colour bar](assets/gallery/plots-4.png)
 
-## IBM
+![Three-dimensional loss surface](assets/gallery/plots-5.png)
 
-A five-colour palette for categorical series.
+## Panel grids
 
-![Synthetic data and model with IBM](assets/gallery/ibm.svg)
+![Logic gates with a common legend and panel labels](assets/gallery/plots-6.png)
 
-## Reproduce a figure
+![Fixed-aspect field comparison with one colour bar per row](assets/gallery/plots-7.png)
 
-Change `palette_name` to `"okabe-ito"`, `"paul-tol-bright"` or `"ibm"`:
-
-```python
-import numpy as np
-import matplotlib.pyplot as plt
-import hedgehogs as hdg
-
-palette_name = "okabe-ito"
-size = hdg.figsize("science", "single")
-hdg.set_style(figure_size=size, palette=palette_name)
-colours = hdg.get_palette(palette_name)
-x = np.linspace(0, 1, 25)
-y = 2 * x + 0.1 * np.sin(20 * x)
-
-fig, ax = plt.subplots(figsize=size)
-ax.scatter(x, y, color=colours[0], label="Data")
-ax.plot(x, 2 * x, color=colours[1], label="Model")
-ax.set(xlabel="x", ylabel="y")
-ax.legend()
-hdg.plots.save("example.svg", fig=fig, bbox_inches=None)
-hdg.plots.show(fig=fig)
-```
-
-The website scales previews for screen reading; their saved canvas is 2.24 × 2.20 inches. Judge text size at the final document width. Explore all [palette swatches](api/palettes.md#built-in-palettes) and [journal dimensions](api/figures.md#figsize) in the API references.
-
-Gallery assets are generated explicitly with [the gallery script](../tools/docs/gallery.py). Fonts, backends and library versions can affect placement; these examples show the committed source's output rather than a cross-environment pixel guarantee.
+For colour choices, see [built-in palettes](api/palettes.md#built-in-palettes).

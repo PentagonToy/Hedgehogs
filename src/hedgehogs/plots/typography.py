@@ -13,12 +13,12 @@ REFERENCE_LABEL_POINTS = 10.5
 REFERENCE_TICK_POINTS = 9.5
 REFERENCE_LEGEND_POINTS = 9.5
 REFERENCE_AXES_WIDTH = 1.4
-REFERENCE_TICK_WIDTH = .72
+REFERENCE_TICK_WIDTH = 1.05
 REFERENCE_LINE_WIDTH = 1.1
 REFERENCE_MARKER_AREA = 16.
 REFERENCE_MARKER_EDGE_WIDTH = .5
-FINISH_MAX_PANEL_SCALE = 1.35
-FINISH_MAX_SPARSE_SCALE = 2.2
+FINISH_MAX_PANEL_SCALE = 1.15
+FINISH_MAX_SPARSE_SCALE = 1.2
 FINISH_MAX_ANNOTATION_SCALE = 1.1
 REFERENCE_PANEL_INCHES = min(REFERENCE_CANVAS_INCHES[0] * .72,
                              REFERENCE_CANVAS_INCHES[1] * .66)
@@ -28,14 +28,6 @@ def panel_scale(axes) -> float:
     """Return the panel's physical short-side ratio to the reference panel."""
     return min(axes.bbox.width, axes.bbox.height) / axes.figure.dpi / REFERENCE_PANEL_INCHES
 
-
-
-def outline_scale(width: float, height: float, reference: tuple[float, float]) -> float:
-    """Keep physical outline weight stable across panel aspect ratios."""
-    from math import log2, sqrt
-    reference_area = reference[0] * .72 * reference[1] * .66
-    relative_length = sqrt(max(width * height / reference_area, 1e-12))
-    return min(2.2, max(1.6, 1.6 + .4 * log2(relative_length)))
 
 def refine_presentation(figure, state, annotations) -> None:
     """Refine default roles on ordinary axes without replacing author settings."""
@@ -92,7 +84,13 @@ def refine_presentation(figure, state, annotations) -> None:
             properties['fontsize'] = ((target,), (target,), 1.)
 
     colourbars = [ax for ax in figure.axes if hasattr(ax, '_colorbar')]
-    def stroke(owner, name, expected, factor, limit=None):
+    frame_width = float(plt.rcParams['axes.linewidth'])
+    line_width = float(plt.rcParams['lines.linewidth'])
+    patch_width = float(plt.rcParams['patch.linewidth'])
+    marker_edge = float(plt.rcParams['lines.markeredgewidth'])
+    label_size = points(plt.rcParams['axes.labelsize'])
+
+    def stroke(owner, name, expected, target, limit=None):
         explicit = '_hedgehogs_line_explicit' if name == 'linewidth' and isinstance(owner, Line2D) else '_hedgehogs_stroke_explicit'
         if getattr(owner, explicit, False):
             return
@@ -106,13 +104,30 @@ def refine_presentation(figure, state, annotations) -> None:
         if not current or any(abs(item - previous) > 1e-6 for item in current):
             properties[key] = None
             return
-        target = expected * factor
         if limit is not None:
             target = min(target, limit)
-        if managed(owner, name, current[0], expected, target):
-            scaled = tuple(target for _ in current)
+        scaled = (target,) * len(current)
+        if current != scaled:
             getattr(owner, 'set_' + name)(scaled if name == 'linewidths' else target)
-            properties[name] = (scaled, scaled, 1.)
+        properties[key] = target
+        properties[name] = (scaled, scaled, 1.)
+
+    legend_size = points(plt.rcParams['legend.fontsize'])
+    legend_title_size = points(plt.rcParams['legend.title_fontsize'] or plt.rcParams['font.size'])
+
+    def style_legend(legend, factor):
+        stroke(legend.get_frame(), 'linewidth', patch_width, frame_width)
+        target = label_size * factor
+        for text in legend.get_texts():
+            font(text, legend_size, target)
+        font(legend.get_title(), legend_title_size, target)
+
+        properties = state.values.setdefault(legend, {})
+        if (not getattr(legend, '_hedgehogs_font_explicit', False)
+                and properties.get('finish_role.legend_fontsize', target) is not None
+                and managed(legend, 'legend_fontsize', legend._fontsize, legend_size, target)):
+            legend._fontsize = target
+            properties['legend_fontsize'] = ((target,), (target,), 1.)
 
     for ax in [*axes, *colourbars]:
         properties = state.values.setdefault(ax, {})
@@ -148,7 +163,7 @@ def refine_presentation(figure, state, annotations) -> None:
             # A long default label must not grow beyond its available panel
             # and force a fixed-aspect plot to collapse during layout.
             renderer = figure._get_renderer()
-            base_size = points(plt.rcParams['axes.labelsize'])
+            base_size = label_size
             for axis, available, horizontal in ((ax.xaxis, ax.bbox.width, True),
                                                  (ax.yaxis, ax.bbox.height, False)):
                 label = axis.label
@@ -163,20 +178,10 @@ def refine_presentation(figure, state, annotations) -> None:
                 if length > 0:
                     factor = min(factor, max(1., available * .95 / length))
             properties['finish_panel_scale'] = (panel_stamp, factor)
-        previous_outline = properties.get('finish_outline_scale')
-        if hasattr(ax, '_colorbar'):
-            outline = state.values[parent]['finish_outline_scale'][1] if parent in axes else 1.6
-        elif previous_outline is not None and previous_outline[0] == stamp:
-            outline = previous_outline[1]
-        else:
-            outline = outline_scale(ax.bbox.width / figure.dpi, ax.bbox.height / figure.dpi,
-                                    state.reference_size)
-        properties['finish_outline_scale'] = (stamp, outline)
         for name, axis in ax._axis_map.items():
-            font(axis.label, points(plt.rcParams['axes.labelsize']),
-                 points(plt.rcParams['axes.labelsize']) * factor)
+            font(axis.label, label_size, label_size * factor)
             expected = points(plt.rcParams['xtick.labelsize'] if name == 'x' else plt.rcParams['ytick.labelsize'])
-            target = expected * factor
+            target = label_size * factor
             tick_properties = state.values.setdefault(axis, {})
             role = 'finish_role.labelsize'
             previous = tick_properties.get(role, expected)
@@ -228,16 +233,16 @@ def refine_presentation(figure, state, annotations) -> None:
             font(text, points(plt.rcParams['font.size']),
                  points(plt.rcParams['xtick.labelsize']) * value_factor)
         for patch in ax.patches:
-            stroke(patch, 'linewidth', float(plt.rcParams['patch.linewidth']), outline)
+            stroke(patch, 'linewidth', patch_width, max(patch_width, frame_width))
         for collection in ax.collections:
             sizes = collection.get_sizes() if hasattr(collection, 'get_sizes') else []
             positive = [float(size) for size in sizes if size > 0]
             limit = min(positive) ** .5 * .25 if positive else None
-            stroke(collection, 'linewidths', float(plt.rcParams['patch.linewidth']), outline, limit)
+            stroke(collection, 'linewidths', patch_width, patch_width * 1.6, limit)
         for line in ax.lines:
-            stroke(line, 'linewidth', float(plt.rcParams['lines.linewidth']), outline)
+            stroke(line, 'linewidth', line_width, max(line_width, frame_width))
             if line.get_marker() not in (None, 'None', 'none', '', ' '):
-                stroke(line, 'markeredgewidth', float(plt.rcParams['lines.markeredgewidth']), outline, line.get_markersize() * .25)
+                stroke(line, 'markeredgewidth', marker_edge, marker_edge * 1.6, line.get_markersize() * .25)
         legend = ax.get_legend()
         if legend is not None:
             source_handles, source_labels = ax.get_legend_handles_labels()
@@ -249,7 +254,7 @@ def refine_presentation(figure, state, annotations) -> None:
                 source = sources.get(text.get_text())
                 if isinstance(source, Line2D) and isinstance(handle, Line2D):
                     if state.values.get(source, {}).get('finish_role.linewidth') is not None:
-                        stroke(handle, 'linewidth', float(plt.rcParams['lines.linewidth']), outline)
+                        stroke(handle, 'linewidth', line_width, max(line_width, frame_width))
                     handle.set_markeredgewidth(source.get_markeredgewidth())
                     widths = (source.get_markeredgewidth(),)
                     state.values.setdefault(handle, {})['markeredgewidth'] = (widths, widths, 1.)
@@ -265,37 +270,12 @@ def refine_presentation(figure, state, annotations) -> None:
                         handle.set_linewidth(source.get_linewidth())
                         widths = (source.get_linewidth(),)
                         state.values.setdefault(handle, {})['linewidth'] = (widths, widths, 1.)
-            stroke(legend.get_frame(), 'linewidth', float(plt.rcParams['patch.linewidth']), outline)
-            expected = points(plt.rcParams['legend.fontsize'])
-            for text in legend.get_texts():
-                font(text, expected, expected * factor)
-            title_size = plt.rcParams['legend.title_fontsize']
-            title_size = points(plt.rcParams['font.size']) if title_size is None else points(title_size)
-            font(legend.get_title(), title_size, title_size * factor)
-            properties = state.values.setdefault(legend, {})
-            key = 'finish_role.legend_fontsize'
-            if (not getattr(legend, '_hedgehogs_font_explicit', False)
-                    and not (key in properties and properties[key] is None)):
-                if managed(legend, 'legend_fontsize', legend._fontsize, expected, expected * factor):
-                    legend._fontsize = expected * factor
-                    properties['legend_fontsize'] = ((expected * factor,), (expected * factor,), 1.)
+            style_legend(legend, factor)
 
     for legend in figure.legends:
-        if not hasattr(legend, '_hedgehogs_sources'):
-            continue
-        panel_factors = [state.values.get(ax, {}).get('finish_panel_scale', (None, 1.))[1]
-                         for ax in legend._panels if ax in axes]
-        factor = min(panel_factors, default=1.)
-        outlines = [state.values.get(ax, {}).get('finish_outline_scale', (None, 1.6))[1]
-                    for ax in legend._panels if ax in axes]
-        stroke(legend.get_frame(), 'linewidth', float(plt.rcParams['patch.linewidth']),
-               min(outlines, default=1.6))
-        expected = points(plt.rcParams['legend.fontsize'])
-        for text in legend.get_texts():
-            font(text, expected, expected * factor)
-        title_size = plt.rcParams['legend.title_fontsize']
-        title_size = points(plt.rcParams['font.size']) if title_size is None else points(title_size)
-        font(legend.get_title(), title_size, title_size * factor)
-        if managed(legend, 'legend_fontsize', legend._fontsize, expected, expected * factor):
-            legend._fontsize = expected * factor
-            state.values.setdefault(legend, {})['legend_fontsize'] = ((expected * factor,), (expected * factor,), 1.)
+        if hasattr(legend, '_hedgehogs_sources'):
+            panel_factors = [state.values[ax]['finish_panel_scale'][1]
+                             for ax in legend._panels if ax in axes]
+            style_legend(legend, min(panel_factors, default=1.))
+        else:
+            stroke(legend.get_frame(), 'linewidth', patch_width, frame_width)

@@ -9,7 +9,7 @@ Configure shared defaults with `set_style()` and `figsize()`. Draw, adjust, disp
 | Group | Public names | Purpose |
 | --- | --- | --- |
 | Figure settings | `set_style`, `reset_style`, `figsize`, `figures.align` | Configure style and read canvas dimensions |
-| Figure helpers | `plots.label`, `plots.square`, `plots.annotate_panels`, `plots.style_colorbar`, `plots.apply_grid`, `plots.enable_minor_ticks` | Label and adjust existing axes and panels |
+| Figure helpers | `plots.label`, `plots.square`, `plots.apply_grid`, `plots.enable_minor_ticks` | Label and adjust existing axes and panels |
 | General plots | `plots.tree`, `plots.pairplot`, `plots.decision_regions`, `plots.legend`, `plots.show`, `plots.save` | Draw, finish and save figures |
 | SHAP visualisation | `plots.force_plot`, `plots.summary_plot`, `plots.waterfall_plot`, `plots.dependence_plot`, `plots.decision_plot` | Draw supplied feature attributions |
 | Palettes | `Palette`, `get_palette`, `build_color_map`, `build_style_map`, `register_palette`, `save_palette`, `load_palette` | Select and map colours |
